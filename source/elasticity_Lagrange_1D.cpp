@@ -17,9 +17,9 @@ bool elasticity_Lagrange_1D::start()
 		P.resize(par.nx_all);
 		rho.resize(par.nx_all);
 		U.resize(par.nx_all);
-		m.resize(par.nx_all + 1);
-		S.resize(par.nx_all + 1);
-		P_hydr.resize(par.nx_all + 1);
+		m.resize(par.nx_all);
+		S.resize(par.nx_all);
+		P_hydr.resize(par.nx_all);
 
 		v.resize(par.nx_all + 1);
 		x.resize(par.nx_all + 1);
@@ -83,7 +83,6 @@ void elasticity_Lagrange_1D::set_initial_conditions()
 	double middle_plain = par.x_start + 0.5 * (par.x_end - par.x_start);
 	for (auto it : par.walls)
 		middle_plain += it.n_fict * par.dx;
-	using enum elasticity_Lagrange_1D_Parameters::ic_preset;
 	for (int i = 0; i < par.nx_all + 1; ++i)
 	{
 		x[i] = par.x_start - (par.walls[0].n_fict - i) * par.dx;	
@@ -106,7 +105,7 @@ void elasticity_Lagrange_1D::apply_boundary_conditions()
 	for (int i = 0; i < par.number_of_walls; ++i)
 	{
 		int edge = (i == 1) ? par.nx_all : 0; // right/left wall cases
-		
+		int corrected_edge = (i == 1) ? edge - 1  : edge;
 		int first_shift = (i == 1) ? -par.walls[i].n_fict : par.walls[i].n_fict;
 		int second_shift = (i == 1) ? first_shift - 1 : first_shift + 1;
 		
@@ -125,9 +124,9 @@ void elasticity_Lagrange_1D::apply_boundary_conditions()
 				v[edge] = par.v_0;
 				break;
 			
-			rho[edge] = rho[edge + first_shift]; // both cases
-			U[edge] = U[edge + first_shift];
-			S[edge] = S[edge + first_shift];
+			rho[corrected_edge] = rho[corrected_edge + first_shift]; // both cases
+			U[corrected_edge] = U[corrected_edge + first_shift];
+			S[corrected_edge] = S[corrected_edge + first_shift];
 		}
 	}
 }
@@ -139,7 +138,7 @@ void elasticity_Lagrange_1D::get_time_step()
 	{
 		double dx = x[i + 1] - x[i];
 		double V = 0.5 * (v[i + 1] + v[i]);
-		double c = std::sqrt(par.K / par.rho_0) / rho[i];
+		double c = std::sqrt(par.K * par.rho_0) / rho[i];
 		double dt_temp = par.CFL * dx / (c + fabs(V));
 		if (dt_temp < min_dt) min_dt = dt_temp;
 	}
@@ -155,7 +154,7 @@ void elasticity_Lagrange_1D::solve_step()
 	double rho_last[par.nx_all];
 	
 	for (int i = 0; i < par.nx_all + 1; ++i) v_last[i] = v[i]; // Last solved layer of v
-	for (int i = 0; i < par.nx_all; ++i) rho_last[i] = par.rho_0; // Last solved layer of rho
+	for (int i = 0; i < par.nx_all; ++i) rho_last[i] = rho[i]; // Last solved layer of rho
 
 	for (int i = 0; i < par.nx_all; ++i) // Artificial viscosity blurs head of a shock wave
 	{
@@ -227,6 +226,7 @@ void elasticity_Lagrange_1D::write_data()
 				<< rho[i]  << " " 
 				<< v_grid[i] << " " 
 				<< P[i] << std::endl;
+			//std::cout << rho[i] << std::endl;
 	}
 	else
 	{

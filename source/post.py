@@ -9,7 +9,7 @@ file_name = "../data/" + str(step) + ".csv"
 data = pd.read_csv(file_name, sep = ' ', header=None)
 # data1 = pd.read_csv(file_sol, sep = ' ', header=None)
 
-fig, ax = plt.subplots(1, 3, figsize = (9*1.5, 6), dpi = 200);
+fig, ax = plt.subplots(1, 3, figsize = (9, 6));
 
 ax[0].plot(data.iloc[:, 0], data.iloc[:, 1], 'o-', lw = 1, markersize = 3)
 # ax[0].plot(data1.iloc[:, 0], data1.iloc[:, 1], '-', c = 'k', lw = 1, markersize = 3, label = "точное решение")

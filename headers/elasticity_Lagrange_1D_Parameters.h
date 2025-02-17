@@ -50,7 +50,7 @@ class elasticity_Lagrange_1D_Parameters
 			test1,
 		} ic;
 
-		double mu_0 = 50.0;
+		double mu_0 = 2.0;
 		int nt_write;
 		std::string write_file;
 
@@ -90,7 +90,6 @@ class elasticity_Lagrange_1D_Parameters
 			{"CFL", {"double", &CFL}},
 			{"v_0", {"double", &v_0}},
 			{"mu", {"double", &mu}},
-			{"mu_0", {"double", &mu_0}},
 			{"rho_0", {"double", &rho_0}},
 			{"Y_0", {"double", &Y_0}},
 			{"K", {"double", &K}},

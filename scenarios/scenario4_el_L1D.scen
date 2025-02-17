@@ -6,10 +6,10 @@ x_start 0.0
 x_end 1.0
 nx 101
 wall 0
-	type noslip
+	type piston
 CFL 0.5
 nt 100
-v_0 15.0
+v_0 15
 mu 79.3e9
 rho_0 7850.0
 Y_0 0.3e9
@@ -18,6 +18,5 @@ nt_write 1
 write_file samplesample.csv
 viscosity PIC
 initial_conditions test1
-mu_0 50.0
 wall 1
-	type noslip
+	type flux

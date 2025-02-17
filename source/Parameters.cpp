@@ -2,6 +2,11 @@
 #include <iterator>
 #include <string_view>
 
+std::tuple<std::string_view, void*> Parameters::get_wall_property(std::string_view)
+{
+
+}
+
 Parameters::viscosity Parameters::interp_viscosity(std::string_view str) const
 {
 	using enum viscosity;
@@ -249,14 +254,11 @@ Parameters::Parameters(std::ifstream fin)
 				continue;
 			}
 			std::array<std::string_view, number_of_properties> var_read_properties{}; // name value
-			std::vector<std::string> vect{}; // name value
 			try
 			{
 				for (bool is_a_wall = true; is_a_wall;)
 				{
 					split_string(read, var_read_properties);
-					split_string_to_v(read, vect);
-					std::cout << vect[0] << " " << vect[1] << std::endl;
 					if (var_read_properties[0] == "wall") 
 					{
 						int wall_number;

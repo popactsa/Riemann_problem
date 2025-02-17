@@ -47,19 +47,42 @@ namespace custom_concepts
 		&& []<std::size_t... N>(std::index_sequence<N...>) { 
 			return (has_tuple_element<T, N> && ...); 
 			}(std::make_index_sequence<std::tuple_size_v<T>>());
+
+	template <class T> 
+	struct remove_cvref : std::remove_cv<std::remove_reference_t<T>> {}; 
+	 
+	template <class T> 
+	using remove_cvref_t = typename remove_cvref<T>::type; 
+	 
+	template <class T, class U> 
+	struct is_base_of : std::is_base_of<remove_cvref_t<T>, remove_cvref_t<U>> {}; 
+	 
+	template <class T, class U> 
+	concept is_base_of_v = is_base_of<T, U>::value; 
+	 
+	template <template<typename T> class CRTP_Base, class CRTP_Derived> 
+	struct is_crtp_base_of : std::is_base_of<remove_cvref_t<CRTP_Base<remove_cvref_t<CRTP_Derived>>>, remove_cvref_t<CRTP_Derived>> {}; 
+	 
+	template <template<typename T> class CRTP_Base, class CRTP_Derived> 
+	concept is_crtp_base_of_v = is_crtp_base_of<CRTP_Base, CRTP_Derived>::value;
 }
 
-struct string_hash { // to allow heterogenious search for unordered containers
-  using is_transparent = void;
-  [[nodiscard]] size_t operator()(const char *txt) const {
-    return std::hash<std::string_view>{}(txt);
-  }
-  [[nodiscard]] size_t operator()(std::string_view txt) const {
-    return std::hash<std::string_view>{}(txt);
-  }
-  [[nodiscard]] size_t operator()(const std::string &txt) const {
-    return std::hash<std::string>{}(txt);
-  }
-};
+
+// std::unordered_map w/ string_hash for heterogenious search
+namespace custom_types
+{
+	struct string_hash { // to allow heterogenious search for unordered containers
+	  using is_transparent = void;
+	  [[nodiscard]] size_t operator()(const char *txt) const {
+	    return std::hash<std::string_view>{}(txt);
+	  }
+	  [[nodiscard]] size_t operator()(std::string_view txt) const {
+	    return std::hash<std::string_view>{}(txt);
+	  }
+	  [[nodiscard]] size_t operator()(const std::string &txt) const {
+	    return std::hash<std::string>{}(txt);
+	  }
+	};
+}
 
 #endif

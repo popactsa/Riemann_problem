@@ -86,7 +86,7 @@ void elasticity_Lagrange_1D_Parameters::assign_read_value(const std::string& val
 	else if (!type.compare("viscosity"))
 		*(static_cast<viscosity*>(ptr)) = interp_viscosity(value);
 	expect<Error_action::logging, custom_exceptions::multiple_read_definitions>(
-		[ptr, key, this]() {return !initialized_variables.contains(ptr); }, 
+		[ptr, this]() {return !initialized_variables.contains(ptr); }, 
 		static_cast<std::string>("Variable ") + found->first + static_cast<std::string>(" is already defined")
 	); //maybe that's too expensive to have that must static_cast's
 	initialized_variables.insert(ptr);
@@ -103,7 +103,7 @@ void elasticity_Lagrange_1D_Parameters::assign_read_wall_value(const std::string
 	else if (!type.compare("w_type"))
 		*(static_cast<wall::w_type*>(ptr)) = interp_wall_type(value);
 	expect<Error_action::logging, custom_exceptions::multiple_read_definitions>(
-		[ptr, key, this]() {return !initialized_variables.contains(ptr); }, 
+		[ptr, this]() {return !initialized_variables.contains(ptr); }, 
 		static_cast<std::string>("Variable ") + found->first + static_cast<std::string>(" <- wall ") + std::to_string(n) + static_cast<std::string>(" is already defined")
 	); //maybe that's too expensive to have that must static_cast's
 	initialized_variables.insert(ptr);
@@ -135,15 +135,16 @@ std::string elasticity_Lagrange_1D_Parameters::set_wall_properties(std::ifstream
 		if (read[0] == '#') continue;
 		else if (read[0] == '\t')
 		{
-			if (read[1] == '#') continue;
+			std::cout << read[1] << std::endl;
 			const int number_of_properties = 2;
 			std::array<std::string, number_of_properties> var_read_properties{}; // name value
 			split_string(read, var_read_properties);
+			std::cout << var_read_properties[0] << var_read_properties[1] << std::endl;
 			var_read_properties[0].erase(0, 1); // pop aligning character
 
 			auto found_name = w_table.find(var_read_properties[0]);
 			expect<Error_action::throwing, std::invalid_argument>(
-				[&, this]() {return found_name != w_table.end(); }, 
+				[&]() {return found_name != w_table.end(); }, 
 				"Can't find read variable name in w_table"
 			);
 			std::string value = var_read_properties[1];
@@ -232,7 +233,7 @@ elasticity_Lagrange_1D_Parameters::elasticity_Lagrange_1D_Parameters(std::ifstre
 					if (var_read_properties[0] == "wall") 
 					{
 						expect<Error_action::throwing, std::invalid_argument>( // std::invalid_argument just to have it worked out equally to std::stoi errors and others
-							[&var_read_properties, this]() {return std::stoi(var_read_properties[1]) <= number_of_walls; }, 
+							[&var_read_properties]() {return std::stoi(var_read_properties[1]) <= number_of_walls; }, 
 							"Wall number doesn't fit in range"
 						);
 						int wall_number = std::stoi(var_read_properties[1]);

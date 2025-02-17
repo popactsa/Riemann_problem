@@ -14,4 +14,4 @@ set(SOURCES
 	)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -Wall -std=c++20 -Wno-narrowing -Wno-return-type")
 include_directories("headers/")
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(${PROJECT_NAME} ${SRC})

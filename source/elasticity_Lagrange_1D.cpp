@@ -209,20 +209,27 @@ void elasticity_Lagrange_1D::solve_step()
 
 void elasticity_Lagrange_1D::write_data()
 {
-	std::string file_name = "data/" + std::to_string(step) + ".csv";
+	std::string file_name = "../data/" + std::to_string(step) + ".csv";
 	std::ofstream file(file_name);
 
-	double x_grid[par.nx_all];
-	double v_grid[par.nx_all];
-	for (int i = 0; i < par.nx_all; ++i)
+	if (file.is_open())
 	{
-		x_grid[i] = 0.5 * (x[i + 1] + x[i]);
-		v_grid[i] = 0.5 * (v[i + 1] + v[i]);
-	}
+		double x_grid[par.nx_all];
+		double v_grid[par.nx_all];
+		for (int i = 0; i < par.nx_all; ++i)
+		{
+			x_grid[i] = 0.5 * (x[i + 1] + x[i]);
+			v_grid[i] = 0.5 * (v[i + 1] + v[i]);
+		}
 
-	for (int i = par.walls[0].n_fict; i < par.nx_all - par.walls[1].n_fict; ++i) 
-		file << x_grid[i] << " " 
-			<< rho[i]  << " " 
-			<< v_grid[i] << " " 
-			<< P[i] << std::endl;
+		for (int i = par.walls[0].n_fict; i < par.nx_all - par.walls[1].n_fict; ++i) 
+			file << x_grid[i] << " " 
+				<< rho[i]  << " " 
+				<< v_grid[i] << " " 
+				<< P[i] << std::endl;
+	}
+	else
+	{
+		std::cout << file_name << std::endl;
+	}
 }

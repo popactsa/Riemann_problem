@@ -22,12 +22,12 @@
 #include "error_handling.h"
 #include "custom_concepts.h"
 
-// std::unordered_map w/ string_hash for heterogenious search
-template<typename key, typename value>
-using ums_w_hs = std::unordered_map<key, value, string_hash, std::equal_to<>>;
 
 class elasticity_Lagrange_1D_Parameters
 {
+	// std::unordered_map w/ string_hash for heterogenious search
+	template<typename key, typename value>
+	using ums_w_hs = std::unordered_map<key, value, string_hash, std::equal_to<>>;
 	public:
 		// General variables
 		int nx_all; // calculated implicitly

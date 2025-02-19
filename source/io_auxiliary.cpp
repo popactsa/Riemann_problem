@@ -1,4 +1,5 @@
 #include "io_auxiliary.h"
+#include <exception>
 
 std::string time_to_string(const std::filesystem::file_time_type& ftime) noexcept
 {
@@ -32,7 +33,7 @@ bool check_rmod(const std::filesystem::path& p) noexcept
 	return true;
 }
 
-std::filesystem::path get_path_to_file_in_dir(const std::filesystem::path &dir, int pos, std::string_view postfix)
+std::tuple<solver_types, std::filesystem::path> get_path_to_file_in_dir(const std::filesystem::path &dir, int pos, std::string_view postfix)
 {
 	int cnt{0};
 	for (auto const& dir_entry : std::filesystem::directory_iterator{dir, std::filesystem::directory_options::skip_permission_denied})
@@ -42,7 +43,28 @@ std::filesystem::path get_path_to_file_in_dir(const std::filesystem::path &dir, 
 		if ((file_perms & owner_read) == owner_read && dir_entry.path().string().ends_with(postfix))
 		{
 			if (cnt < pos) ++cnt;
-			if (cnt == pos) return dir_entry.path();
+			if (cnt == pos) 
+			{
+				using enum solver_types;
+				solver_types solver_type = unknown;
+				std::string solver_name;
+				std::ifstream fin(dir_entry.path());
+				if (fin.is_open())
+				{
+					while(std::getline(fin, solver_name))
+					{
+						if (solver_name[0] == '!')
+						{
+							auto found = solver_types_table.find(solver_name.substr(1));
+							if (found != solver_types_table.end())
+								solver_type = found->second;
+							break;
+						}
+					}
+					fin.close();
+				}
+				return {solver_type, dir_entry.path()};
+			}
 		}
 	}
 	throw std::range_error("end of directory reached");
@@ -65,7 +87,7 @@ int print_filenames(const std::filesystem::path &dir, std::string_view postfix) 
 	int cnt{0};
 
 #ifdef __cpp_lib_format
-	std::string fmt = "      {:>2} : "; // supposing you have lower than 100 solvers..
+	std::string fmt = "      {:>2} : "; // supposing you have less than 100 solvers..
 	const int init_size = 11; // depending on fmt
 	using namespace std::literals::string_literals;
 	using namespace io_constants;
@@ -85,16 +107,23 @@ int print_filenames(const std::filesystem::path &dir, std::string_view postfix) 
 			++cnt;
 			std::ifstream fin(dir_entry.path());
 #ifdef __cpp_lib_format
-			std::string solver_type = "unknown";
+			std::string solver_type_read;
 			if (fin.is_open())
 			{
-				while(std::getline(fin, solver_type))
+				while(std::getline(fin, solver_type_read))
 				{
-					if (solver_type[0] == '#') continue;
-					else
+					if (solver_type_read[0] == '#') continue;
+					else if (solver_type_read[0] == '!')
 					{
-						auto found = solver_types_table.find(solver_type);
-						if (found == solver_types_table.end()) solver_type = "unknown";
+						solver_type_read.erase(0, 1);
+						auto found = solver_types_table.find(solver_type_read);
+						if (found != solver_types_table.end()) solver_type_read = found->first;
+						else solver_type_read = "unknown";
+						break;
+					}
+					else 
+					{
+						solver_type_read = "unknown";
 						break;
 					}
 				}
@@ -102,7 +131,7 @@ int print_filenames(const std::filesystem::path &dir, std::string_view postfix) 
 			}
 			std::string rp_str{static_cast<std::string>(std::filesystem::relative(dir_entry.path(), dir))};
 			std::string time_str{time_to_string(dir_entry.last_write_time())};
-			std::cout << std::vformat(fmt, std::make_format_args(cnt, rp_str, solver_type, time_str)) << std::endl;
+			std::cout << std::vformat(fmt, std::make_format_args(cnt, rp_str, solver_type_read, time_str)) << std::endl;
 #else
 			std::cout << cnt << " : " << dir_entry.path().string() << std::endl;
 #endif

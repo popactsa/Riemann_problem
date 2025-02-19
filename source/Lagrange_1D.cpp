@@ -1,9 +1,18 @@
 #include "Lagrange_1D.h"
+#include "Parameters_Lagrange_1D.h"
+
+
+Lagrange_1D::Lagrange_1D(std::filesystem::path _path):
+	par(),
+	parser(_path, &par)
+{
+}
 
 bool Lagrange_1D::start()
 {
 	try
 	{
+		parser.start();
 		using t_format = std::chrono::milliseconds;
 		const auto solve_start_tick_time = std::chrono::system_clock::now();
 		auto print_solve_time = print_time_between_on_exit([&]()
@@ -74,7 +83,7 @@ void Lagrange_1D::set_initial_conditions()
 	double middle_plain = par.x_start + 0.5 * (par.x_end - par.x_start);
 	for (auto it : par.walls)
 		middle_plain += it.n_fict * par.dx;
-	using enum Parameters::ic_preset;
+	using enum Parameters_Lagrange_1D::ic_preset;
 	for (int i = 0; i < par.nx_all + 1; ++i)
 	{
 		x[i] = par.x_start - (par.walls[0].n_fict - i) * par.dx;	
@@ -144,7 +153,7 @@ void Lagrange_1D::set_initial_conditions()
 
 void Lagrange_1D::apply_boundary_conditions()
 {
-	using enum Parameters::wall::w_type;
+	using enum Parameters_Lagrange_1D::wall::w_type;
 	for (int i = 0; i < par.number_of_walls; ++i)
 	{
 		int fict = (i == 1) ? par.nx_all : 0; // right/left wall cases
@@ -186,7 +195,7 @@ void Lagrange_1D::solve_step()
 
 	for (int i = 0; i < par.nx_all; ++i) // Artificial viscosity blurs head of a shock wave
 	{
-		using enum Parameters::viscosity;
+		using enum Parameters_Lagrange_1D::viscosity;
 		switch(par.visc)
 		{
 			case none:
@@ -239,7 +248,7 @@ void Lagrange_1D::solve_step()
 
 void Lagrange_1D::write_data()
 {
-	std::string file_name = "data/" + std::to_string(step) + ".csv";
+	std::string file_name = "../data/" + std::to_string(step) + ".csv";
 	std::ofstream file(file_name);
 
 	double x_grid[par.nx_all];

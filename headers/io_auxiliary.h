@@ -39,13 +39,15 @@ namespace io_constants
 enum class solver_types
 {
 	unknown,
-	Lagrange_1D
+	solver_Lagrange_1D,
 };
 
-static std::unordered_map<std::string, solver_types> solver_types_table
+template<typename key, typename value>
+using ums_w_hs = std::unordered_map<key, value, custom_types::string_hash, std::equal_to<>>;
+static ums_w_hs<std::string, solver_types> solver_types_table
 {
 	{"unknown", solver_types::unknown},
-	{"Lagrange 1D", solver_types::Lagrange_1D}
+	{"Lagrange 1D", solver_types::solver_Lagrange_1D}
 };
 
 std::string time_to_string(const std::filesystem::file_time_type&) noexcept;
@@ -81,9 +83,9 @@ template<typename F>
 	return final_action{f};
 }
 
-std::filesystem::path get_path_to_file_in_dir(const std::filesystem::path&, int, std::string_view);
+std::tuple<solver_types, std::filesystem::path> get_path_to_file_in_dir(const std::filesystem::path&, int, std::string_view);
 
-inline std::filesystem::path get_path_to_file_in_dir(const std::filesystem::path &dir, int pos)
+inline std::tuple<solver_types, std::filesystem::path> get_path_to_file_in_dir(const std::filesystem::path &dir, int pos)
 {
 	return get_path_to_file_in_dir(dir, pos, "");
 }

@@ -1,12 +1,20 @@
 #include "Lagrange_1D.h"
 #include "Parameters_Lagrange_1D.h"
 
-
-Lagrange_1D::Lagrange_1D(std::filesystem::path _path):
-	par(),
-	parser(_path, &par)
-{
-}
+Lagrange_1D::Lagrange_1D(std::filesystem::path _path)
+	try:
+		par(),
+		parser(_path, &par)
+	{
+	}
+	catch(const std::bad_weak_ptr& error)
+	{
+		std::cerr << error.what();
+	}
+	catch(const std::ifstream::failure& error)
+	{
+		std::cerr << error.what() << " " << error.code() << std::endl;
+	} // Needs to be handled in caller!
 
 bool Lagrange_1D::start()
 {
@@ -57,11 +65,10 @@ void Lagrange_1D::check_parameters()
 	try
 	{
 		typedef custom_exceptions::invalid_parameter_value exc;
-		typedef custom_exceptions::tbd tbd;
 		expect<Error_action::throwing, exc>([this]{return par.x_start < par.x_end; }, "par.x_start < par.x_end");
 		for (auto it : par.walls)
 		{
-			expect<Error_action::throwing, tbd>([&it]{return !(it.n_fict > 1); }, "par.nx_fict > 1");
+			expect<Error_action::throwing, exc>([&it]{return (it.n_fict == 1); }, "par.nx_fict > 1");
 			expect<Error_action::throwing, exc>([&it]{return !(it.n_fict <= 0); }, "par.nx_fict <= 0");
 		}
 		expect<Error_action::throwing, exc>([this]{return par.gamma > 0.0; }, "par.gamma > 0");

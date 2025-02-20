@@ -6,9 +6,10 @@
 
 #include "io_auxiliary.h"
 #include "Parameters_Lagrange_1D.h"
-#include "Parameters_parser.h"
+#include "Parser_base.h"
 #include "Parser_Lagrange_1D.h"
 #include "Lagrange_1D.h"
+#include "custom.h"
 struct winsize w;
 const std::chrono::time_point<std::chrono::system_clock> start_tick_time = std::chrono::system_clock::now();
 const std::time_t start_time = std::chrono::system_clock::to_time_t(start_tick_time);

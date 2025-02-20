@@ -10,6 +10,7 @@
 
 namespace custom_exceptions
 {
+// Parameters exceptions
 	class parameters_exception : public std::exception
 	{
 		protected:
@@ -21,20 +22,33 @@ namespace custom_exceptions
 				return what_message.c_str();
 			}
 	};
-	class multiple_read_definitions : public parameters_exception
-	{
-		public:
-			explicit multiple_read_definitions(const std::string& msg) : parameters_exception(msg){}
-	};
 	class invalid_parameter_value : public parameters_exception
 	{
 		public:
 			explicit invalid_parameter_value(const std::string& msg) : parameters_exception(msg){}
 	};
-	class tbd : public parameters_exception
+
+// Parser exceptions
+	class parser_exception : public std::exception
+	{
+		protected:
+			std::string what_message;
+		public:
+			explicit parser_exception(const std::string& msg) : what_message(msg) {}
+			const char* what() const noexcept override
+			{
+				return what_message.c_str();
+			}
+	};
+	class multiple_read_definitions : public parser_exception
 	{
 		public:
-			explicit tbd(const std::string& msg) : parameters_exception(msg){}
+			explicit multiple_read_definitions(const std::string& msg) : parser_exception(msg){}
+	};
+	class invalid_read_name: public parser_exception
+	{
+		public:
+			explicit invalid_read_name(const std::string& msg) : parser_exception(msg){}
 	};
 }
 

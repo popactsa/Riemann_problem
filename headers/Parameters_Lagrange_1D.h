@@ -1,5 +1,5 @@
-#ifndef PARAMETERS_H
-#define PARAMETERS_H
+#ifndef PARAMETERS_LAGRANGE_1D_H
+#define PARAMETERS_LAGRANGE_1D_H
 
 #include <iostream>
 #include <memory>
@@ -23,15 +23,12 @@
 
 #include "io_auxiliary.h"
 #include "error_handling.h"
-#include "custom_concepts.h"
+#include "custom.h"
 
-
-class Parameters_Lagrange_1D{
-	// std::unordered_map w/ string_hash for heterogenious search
-	template<typename key, typename value>
-	using ums_w_hs = std::unordered_map<key, value, custom_types::string_hash, std::equal_to<>>;
-
+class Parameters_Lagrange_1D
+{
 	public:
+		void* get_wall_property(std::string_view, void*) const;
 		// General variables
 		int nx_all; // calculated implicitly
 		double dx;
@@ -64,8 +61,7 @@ class Parameters_Lagrange_1D{
 
 		int nt_write;
 		std::string write_file;
-
-		ums_w_hs<std::string, std::pair<std::string, void*>> general_vars_table
+		unordered_map_w_shs<std::string, std::pair<std::string, void*>> general_vars_table
 		{
 			{"x_start", {"double", &x_start}},
 			{"x_end", {"double", &x_end}},
@@ -92,7 +88,7 @@ class Parameters_Lagrange_1D{
 			int n_fict = 1; // set implicitly depending on type(will make it later, depending on solver)
 			double P, v;
 		};
-		ums_w_hs<std::string, std::string> wall_properties_map
+		unordered_map_w_shs<std::string, std::string> wall_properties_map
 		{
 			{"type", "w_type"},
 			{"n_fict", "int"},
@@ -106,7 +102,6 @@ class Parameters_Lagrange_1D{
 		{
 			&mu0 // adding default-initialized variables
 		};
-		void* get_wall_property(std::string_view, void*) const;
 
 		Parameters_Lagrange_1D(){};
 };

@@ -1,5 +1,5 @@
-#ifndef PARAMETERS_PARSER_H
-#define PARAMETERS_PARSER_H
+#ifndef PARSER_BASE_H
+#define PARSER_BASE_H
 
 #include "error_handling.h"
 #include "io_auxiliary.h"
@@ -11,7 +11,7 @@
 #include <tuple>
 #include <set>
 
-class Parameters_parser_common
+class Parser_base_common
 {
 protected:
 	enum class var_group
@@ -22,15 +22,16 @@ protected:
 };
 
 template<typename Parser_spec>
-struct Parameters_parser: public Parameters_parser_common
+struct Parser_base: public Parser_base_common
 // Base class for parsers
 {
+	friend Parser_spec;
 protected:
 	std::ifstream fin;
 	std::set<void*> initialized_variables
 	{
 	};
-	Parameters_parser(std::filesystem::path _path):
+	Parser_base(std::filesystem::path _path):
 		fin(_path)
 	{
 		fin.exceptions(fin.failbit);
@@ -39,7 +40,7 @@ protected:
 	{
 		return static_cast<const Parser_spec*>(this)->check_initialization_impl();
 	}
-	std::tuple<Parameters_parser_common::var_group, std::string_view, void*> get_var_properties(std::string_view var_name, Parameters_parser_common::var_group object_group, void* object_ptr) const
+	std::tuple<Parser_base_common::var_group, std::string_view, void*> get_var_properties(std::string_view var_name, Parser_base_common::var_group object_group, void* object_ptr) const
 	{
 		return static_cast<const Parser_spec*>(this)->get_var_properties_impl(var_name, object_group, object_ptr);
 	}
@@ -51,17 +52,14 @@ protected:
 	{
 		return static_cast<const Parser_spec*>(this)->get_wall_ptr_impl(read_number);
 	}
-	void initialize_dependent_variables()
+	bool initialize_dependent_variables()
 	{
 		return static_cast<Parser_spec*>(this)->initialize_dependent_variables_impl();
 	}
 	bool parse_line(var_group &current_group, void* &current_object_ptr)
 	{
 		std::string read;
-		if (fin.eof())
-			return false;
 		std::getline(fin, read);
-		std::cout << read << std::endl;
 		using enum var_group;
 		if (read[0] == '#')
 			return true;
@@ -76,22 +74,21 @@ protected:
 			return true;
 		}
 		else if (read[0] == '\t') // pop aligning character
-		{
 			read.erase(0, 1);
-		}
 		std::vector<std::string> read_split;
 		split_string_to_v(read, read_split);
 		auto [group, type, var_ptr] = get_var_properties(read_split[0], current_group, current_object_ptr);
+		using namespace std::string_literals;
 		switch(group)
 		{
 			case general:
-				if (var_ptr == nullptr)
-				{
-					std::cout << read_split[0] << " : not found!" << std::endl;
-					std::terminate();
-				}
-				else
-					return assign_read_value(read_split, type, var_ptr);
+				expect<Error_action::terminating, custom_exceptions::invalid_read_name>(
+						[var_ptr](){
+							return var_ptr != nullptr;
+						},
+						"Unknown variable"s + read_split[0]
+				);
+				return assign_read_value(read_split, type, var_ptr);
 			case wall:
 				{
 					if (var_ptr == nullptr) // e.g. it's a wall declaration string read, now get ptr to wall
@@ -116,14 +113,13 @@ public:
 	{
 		var_group current_group = var_group::general;
 		void* current_object_ptr = nullptr;
+		bool status = true;
 		consider_default_initialized_variables();
-		while(fin.peek() != EOF)
-			parse_line(current_group, current_object_ptr);//parsing data from file
-		check_initialization();
-		initialize_dependent_variables();
-		return true;
+		while (fin.peek() != EOF && status)
+			status = parse_line(current_group, current_object_ptr);//parsing data from file
+		return status && check_initialization() && initialize_dependent_variables();
 	}
-	virtual ~Parameters_parser()
+	virtual ~Parser_base()
 	{
 		fin.close();
 	}

@@ -3,13 +3,13 @@
 
 #include "Parameters_Lagrange_1D.h"
 #include "Parser_Lagrange_1D.h"
-#include "iSolver.h"
+#include "Solver_base.h"
 #include "error_handling.h"
 #include "io_auxiliary.h"
 #include <memory>
 #include <vector>
 
-class Lagrange_1D: public iSolver {
+class Lagrange_1D: public Solver_base {
 	public:
 		Lagrange_1D(std::filesystem::path);
 		bool start() override;

@@ -1,10 +1,8 @@
 #include "Parser_Lagrange_1D.h"
 #include "Parameters_Lagrange_1D.h"
-#include "Parameters_parser.h"
+#include "Parser_base.h"
+#include "custom.h"
 #include <map>
-
-template<typename key, typename value>
-using ums_w_hs = std::unordered_map<key, value, custom_types::string_hash, std::equal_to<>>;
 
 void Parser_Lagrange_1D::consider_default_initialized_variables_impl()
 {
@@ -18,16 +16,16 @@ void* Parser_Lagrange_1D::get_wall_ptr_impl(std::string_view read_number) const
 	return &(pars_ptr->walls)[result];
 }
 
-std::tuple<Parameters_parser_common::var_group, std::string_view, void*> Parser_Lagrange_1D::get_var_properties_impl(std::string_view var_name, Parameters_parser_common::var_group object_group, void* object_ptr) const
+std::tuple<Parser_base_common::var_group, std::string_view, void*> Parser_Lagrange_1D::get_var_properties_impl(std::string_view var_name, Parser_base_common::var_group object_group, void* object_ptr) const
 {
-	using enum Parameters_parser_common::var_group;
+	using enum Parser_base_common::var_group;
 	switch(object_group)
 	{
 		case general: // not being inside of any group
 			{
 				if (!var_name.compare("wall"))
 					return {wall, "wall", nullptr};
-				std::map<var_group, ums_w_hs<std::string, std::pair<std::string, void*>>* > maps_ptrs
+				std::map<var_group, unordered_map_w_shs<std::string, std::pair<std::string, void*>>* > maps_ptrs
 				{
 					{general, &(pars_ptr->general_vars_table)}
 				};
@@ -59,7 +57,7 @@ std::tuple<Parameters_parser_common::var_group, std::string_view, void*> Parser_
 Parameters_Lagrange_1D::viscosity Parser_Lagrange_1D::interp_viscosity(std::string_view str) const
 {
 	using enum Parameters_Lagrange_1D::viscosity;
-	ums_w_hs<std::string, Parameters_Lagrange_1D::viscosity> tbl
+	unordered_map_w_shs<std::string, Parameters_Lagrange_1D::viscosity> tbl
 	{
 		{"none", none},
 		{"Neuman", Neuman},
@@ -85,7 +83,7 @@ Parameters_Lagrange_1D::viscosity Parser_Lagrange_1D::interp_viscosity(std::stri
 Parameters_Lagrange_1D::ic_preset Parser_Lagrange_1D::interp_ic_preset(std::string_view str) const
 {
 	using enum Parameters_Lagrange_1D::ic_preset;
-	ums_w_hs<std::string, Parameters_Lagrange_1D::ic_preset> tbl
+	unordered_map_w_shs<std::string, Parameters_Lagrange_1D::ic_preset> tbl
 	{
 		{"test1", test1},
 		{"test2", test2},
@@ -109,7 +107,7 @@ Parameters_Lagrange_1D::ic_preset Parser_Lagrange_1D::interp_ic_preset(std::stri
 Parameters_Lagrange_1D::wall::w_type Parser_Lagrange_1D::interp_w_type(std::string_view str) const
 {
 	using enum Parameters_Lagrange_1D::wall::w_type;
-	ums_w_hs<std::string, Parameters_Lagrange_1D::wall::w_type> tbl
+	unordered_map_w_shs<std::string, Parameters_Lagrange_1D::wall::w_type> tbl
 	{
 		{"noslip", noslip},
 		{"flux", flux}
@@ -189,10 +187,11 @@ bool Parser_Lagrange_1D::check_initialization_impl() const
 	return result;
 }
 
-void Parser_Lagrange_1D::initialize_dependent_variables_impl()
+bool Parser_Lagrange_1D::initialize_dependent_variables_impl()
 {
 	pars_ptr->nx_all = pars_ptr->nx;
 	for (auto it : pars_ptr->walls)
 		pars_ptr->nx_all += it.n_fict;
 	pars_ptr->dx = (pars_ptr->x_end - pars_ptr->x_start) / pars_ptr->nx;
+	return true;
 }

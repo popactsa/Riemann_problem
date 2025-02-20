@@ -22,7 +22,7 @@
 #endif
 
 
-#include "custom_concepts.h"
+#include "custom.h"
 #include "error_handling.h"
 
 extern struct winsize w;
@@ -42,9 +42,7 @@ enum class solver_types
 	solver_Lagrange_1D,
 };
 
-template<typename key, typename value>
-using ums_w_hs = std::unordered_map<key, value, custom_types::string_hash, std::equal_to<>>;
-static ums_w_hs<std::string, solver_types> solver_types_table
+static unordered_map_w_shs<std::string, solver_types> solver_types_table
 {
 	{"unknown", solver_types::unknown},
 	{"Lagrange 1D", solver_types::solver_Lagrange_1D}
@@ -93,7 +91,7 @@ inline std::tuple<solver_types, std::filesystem::path> get_path_to_file_in_dir(c
 int print_filenames(const std::filesystem::path&, std::string_view) noexcept;
 
 template<typename C>
-	requires custom_concepts::Container<C> && (!std::assignable_from<typename C::value_type, std::string_view>)
+	requires custom::concepts::Container<C> && (!std::assignable_from<typename C::value_type, std::string_view>)
 constexpr void split_string(std::string_view init, C& result, const char sep) // if get rid of expect-assertions, function can be declared constexpr
 {
 	auto it = result.begin();
@@ -114,7 +112,7 @@ constexpr void split_string(std::string_view init, C& result, const char sep) //
 }
 
 template<typename C>
-	requires custom_concepts::Container<C> && (!std::assignable_from<typename C::value_type, std::string_view>)
+	requires custom::concepts::Container<C> && (!std::assignable_from<typename C::value_type, std::string_view>)
 constexpr void split_string(std::string_view init, C& result) // if get rid of expect-assertions, function can be declared constexpr
 {
 	split_string(init, result, ' ');

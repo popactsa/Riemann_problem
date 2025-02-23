@@ -5,10 +5,12 @@
 #include <unistd.h>
 
 #include "io_auxiliary.h"
-#include "Lagrange_1D.h"
-#include "elasticity_Lagrange_1D.h"
-#include "Parameters.h"
-#include "elasticity_Lagrange_1D_Parameters.h"
+//#include "Lagrange_1D.h"
+//#include "elasticity_Lagrange_1D.h"
+#include "CJ_Lagrange_1D.h"
+//#include "Parameters.h"
+//#include "elasticity_Lagrange_1D_Parameters.h"
+#include "CJ_Lagrange_1D_Parameters.h"
 
 struct winsize w;
 const std::chrono::time_point<std::chrono::system_clock> start_tick_time = std::chrono::system_clock::now();
@@ -28,15 +30,15 @@ int main()
 		int choose_item = choose_in_range(1, n_items);
 		scenario_file = get_path_to_file_in_dir(scenario_dir, choose_item, postfix);
 
-		const elasticity_Lagrange_1D_Parameters pars(std::ifstream{scenario_file});
-		elasticity_Lagrange_1D task(pars);
+		const CJ_Lagrange_1D_Parameters pars(std::ifstream{scenario_file});
+		CJ_Lagrange_1D task(pars);
 		if (task.start())
 		{
 			std::string post_start(static_cast<std::string>("python ../source/post.py ") + std::to_string(pars.nt / pars.nt_write - 1));
 			system(post_start.c_str());
 #ifdef WIN32
 #else
-    			system("sxiv graph.png");
+    		system("sxiv graph.png");
 #endif // WIN32
 		}
 	}

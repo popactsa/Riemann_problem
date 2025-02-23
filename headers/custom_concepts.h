@@ -62,4 +62,10 @@ struct string_hash { // to allow heterogenious search for unordered containers
   }
 };
 
+
+namespace solver_constants
+{
+	double R = 8.31446261815324;
+}
+
 #endif

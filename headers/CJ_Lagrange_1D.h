@@ -6,7 +6,7 @@
 #include "error_handling.h"
 #include "io_auxiliary.h"
 #include <vector>
-
+#
 class CJ_Lagrange_1D: public iSolver {
 	public:
 		CJ_Lagrange_1D(const CJ_Lagrange_1D_Parameters& _par): par{_par} {}

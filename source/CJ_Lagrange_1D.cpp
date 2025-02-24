@@ -1,6 +1,6 @@
 #include "CJ_Lagrange_1D.h"
 #include "custom_concepts.h"
-
+#
 bool CJ_Lagrange_1D::start()
 {
 	try

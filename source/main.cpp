@@ -5,11 +5,11 @@
 #include <unistd.h>
 
 #include "io_auxiliary.h"
-//#include "Lagrange_1D.h"
-//#include "elasticity_Lagrange_1D.h"
+#include "Lagrange_1D.h"
+#include "elasticity_Lagrange_1D.h"
 #include "CJ_Lagrange_1D.h"
-//#include "Parameters.h"
-//#include "elasticity_Lagrange_1D_Parameters.h"
+#include "Parameters.h"
+#include "elasticity_Lagrange_1D_Parameters.h"
 #include "CJ_Lagrange_1D_Parameters.h"
 
 struct winsize w;

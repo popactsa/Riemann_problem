@@ -8,7 +8,7 @@ nx 101
 wall 0
 	type piston
 CFL 0.5
-nt 100
+nt 1
 rho_0 44.6
 gamma 1.4
 Q 2e6

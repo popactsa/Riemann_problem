@@ -1,7 +1,7 @@
 #include "CJ_Lagrange_1D_Parameters.h"
 #include <cmath>
 #include <iterator>
-#
+
 CJ_Lagrange_1D_Parameters::viscosity CJ_Lagrange_1D_Parameters::interp_viscosity(std::string_view str) const
 {
 	using enum viscosity;

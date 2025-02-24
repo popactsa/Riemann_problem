@@ -22,7 +22,7 @@
 #include "io_auxiliary.h"
 #include "error_handling.h"
 #include "custom_concepts.h"
-#
+
 
 class CJ_Lagrange_1D_Parameters
 {
@@ -51,6 +51,9 @@ class CJ_Lagrange_1D_Parameters
 		} ic;
 
 		double mu_0 = 2.0;
+		double R = 8.31;
+
+
 		int nt_write;
 		std::string write_file;
 
@@ -101,7 +104,8 @@ class CJ_Lagrange_1D_Parameters
 
 		std::set<void*> initialized_variables
 		{
-			&mu_0 // adding default-initialized variables
+		&mu_0, // adding default-initialized variables
+		&R,
 		};
 
 		bool does_initialized_values_contain_all_w_vars(const int, const ums_w_hs<std::string, std::pair<std::string, void*>>&) const noexcept;

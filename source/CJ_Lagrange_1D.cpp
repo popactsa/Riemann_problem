@@ -1,6 +1,7 @@
 #include "CJ_Lagrange_1D.h"
 #include "custom_concepts.h"
-#
+#include "io_auxiliary.h"
+
 bool CJ_Lagrange_1D::start()
 {
 	try
@@ -30,13 +31,28 @@ bool CJ_Lagrange_1D::start()
 		std::cout << "Allocation : done!" << std::endl;
 		std::cout << "Processing time : " << count_time_between<t_format>(prev_tick_time, std::chrono::system_clock::now()) << " ms" << std::endl << std::endl;
 
-		set_initial_conditions(); // only nx_fict = 1
-		for (step = 1; step < par.nt; ++step)
+		set_initial_conditions();// only nx_fict = 1
+
+		for (step = 1; step <= par.nt; step++)
 		{
 			solve_step();
 			t += dt;
-			if (step % par.nt_write == 0)	write_data();
+			if (step % par.nt_write == 0)
+				write_data();
+
+			// std::cout << dt << std::endl;
+			// for (int i = 0; i < par.nx_all; i++)
+			// {
+			// 	std::cout << v[i] << std::endl;
+			// }
+			//  		std::cout << std::endl;
+			for (int i = 0; i < par.nx_all + 1; i++)
+			{
+				std::cout << x[i] << std::endl;
+			}
+			std::cout << std::endl;
 		}
+
 		std::cout << "Chapman-Jouguet Lagrange 1D calculations : done!" << std::endl;
 		std::cout << "Processing time : " << count_time_between<t_format>(prev_tick_time, std::chrono::system_clock::now()) << " ms" << std::endl;
 		std::cout << "=================" << std::endl;
@@ -64,13 +80,10 @@ void CJ_Lagrange_1D::check_parameters()
 		expect<Error_action::throwing, exc>([this]{return par.nt > 0; }, "par.nt > 0");
 		expect<Error_action::throwing, exc>([this]{return par.nt_write > 0; }, "par.nt_write > 0");
 		expect<Error_action::throwing, exc>([this]{return par.CFL > 0.0; }, "par.CFL > 0");
-		expect<Error_action::throwing, exc>([this]{return par.mu_0 > 0; }, "par.mu0 > 0");
+		expect<Error_action::throwing, exc>([this]{return par.mu_0 > 0; }, "par.mu_0 > 0");
 
-		expect<Error_action::throwing, exc>([this]{return par.v_0 > 0; }, "par.u0 > 0");
-		expect<Error_action::throwing, exc>([this]{return par.mu > 0; }, "par.mu > 0");
+		expect<Error_action::throwing, exc>([this]{return par.v_0 > 0; }, "par.v_0 > 0");
 		expect<Error_action::throwing, exc>([this]{return par.rho_0 > 0; }, "par.rho_0 > 0");
-		expect<Error_action::throwing, exc>([this]{return par.Y_0 > 0; }, "par.Y_0 > 0");
-		expect<Error_action::throwing, exc>([this]{return par.K > 0; }, "par.K > 0");
 
 	}
 	catch (const custom_exceptions::parameters_exception& err)
@@ -85,12 +98,12 @@ void CJ_Lagrange_1D::set_initial_conditions()
 	//double middle_plain = par.x_start + 0.5 * (par.x_end - par.x_start);
 	//for (auto it : par.walls)
 	//	middle_plain += it.n_fict * par.dx;
-	for (int i = 0; i < par.nx_all + 1; ++i)
+	for (int i = 0; i < par.nx_all + 1; i++)
 	{
 		x[i] = par.x_start - (par.walls[0].n_fict - i) * par.dx;	
 		v[i] = 0.0;
 	}
-	for (int i = 0; i < par.nx_all; ++i)
+	for (int i = 0; i < par.nx_all; i++)
 	{
 		rho[i] = par.rho_0;
 		V[i] = 1.0 / rho[i];
@@ -100,7 +113,7 @@ void CJ_Lagrange_1D::set_initial_conditions()
 		else
 			W[i] = 1.0;
 		P[i] = (par.gamma - 1.0) * rho[i] * (U[i] + par.Q);
-		T[i] = P[i] / rho[i] / solver_constants::R;
+		T[i] = P[i] / rho[i] / par.R;
 		m[i] = rho[i] * (x[i + 1] - x[i]);
 	}
 }
@@ -108,7 +121,7 @@ void CJ_Lagrange_1D::set_initial_conditions()
 void CJ_Lagrange_1D::apply_boundary_conditions()
 {
 	using enum CJ_Lagrange_1D_Parameters::wall::w_type;
-	for (int i = 0; i < par.number_of_walls; ++i)
+	for (int i = 0; i < par.number_of_walls; i++)
 	{
 		int edge = (i == 1) ? par.nx_all : 0; // right/left wall cases
 		int corrected_edge = (i == 1) ? edge - 1  : edge;
@@ -139,28 +152,29 @@ void CJ_Lagrange_1D::apply_boundary_conditions()
 void CJ_Lagrange_1D::get_time_step()
 {
 	double min_dt = 1.0e6;
-	for (int i = 1; i < par.nx_all; ++i)
+	for (int i = 1; i < par.nx_all; i++)
 	{
 		double dx = x[i + 1] - x[i];
-		double V = 0.5 * (v[i + 1] + v[i]);
+		double v_mean = 0.5 * (v[i + 1] + v[i]);
 		double c = std::sqrt(par.gamma * P[i] / rho[i]);
-		double dt_temp = par.CFL * dx / (c + fabs(V));
-		if (dt_temp < min_dt) min_dt = dt_temp;
+		double dt_temp = par.CFL * dx / (c + fabs(v_mean));
+		if (dt_temp < min_dt)
+			min_dt = dt_temp;
 	}
 	dt = min_dt;
 }
 
 void CJ_Lagrange_1D::solve_step()
 {
-	apply_boundary_conditions();
+	//apply_boundary_conditions();
 	get_time_step();
 
 	double v_last[par.nx_all + 1];
 	
-	for (int i = 0; i < par.nx_all + 1; ++i)
+	for (int i = 0; i < par.nx_all + 1; i++)
 		v_last[i] = v[i]; // Last solved layer of v
 
-	for (int i = 0; i < par.nx_all; ++i) // Artificial viscosity blurs head of a shock wave
+	for (int i = 0; i < par.nx_all; i++) // Artificial viscosity blurs head of a shock wave
 	{
 		using enum CJ_Lagrange_1D_Parameters::viscosity;
 		switch(par.visc)
@@ -175,14 +189,15 @@ void CJ_Lagrange_1D::solve_step()
 	}
 
 	// calculating v
-	for (int i = par.walls[0].n_fict + 1; i < par.nx_all - par.walls[1].n_fict; ++i) 
+	for (int i = par.walls[0].n_fict + 1; i < par.nx_all - par.walls[1].n_fict; i++) 
 		v[i] = v[i] - ((P[i] + omega[i]) - (P[i - 1] + omega[i - 1])) * dt / (0.5 * (m[i] + m[i - 1]));
 
 	// recalculating x
-	for (int i = 0; i < par.nx_all + 1; ++i)
-		x[i] += v[i] * dt;
-
-	for (int i = par.walls[0].n_fict; i < par.nx_all - par.walls[1].n_fict; ++i)
+	for (int i = 0; i < par.nx_all + 1; i++)
+	{
+		x[i] = x[i] + v[i] * dt;
+	}
+	for (int i = par.walls[0].n_fict; i < par.nx_all - par.walls[1].n_fict; i++)
 	{
 		// calculating density
 		rho[i] = m[i] / (x[i+1] - x[i]);
@@ -194,7 +209,7 @@ void CJ_Lagrange_1D::solve_step()
 			+ (v_last[i + 1] + v_last[i]) * (v_last[i + 1] + v_last[i]) / 8.0 
 			- (v[i + 1] + v[i]) * (v[i + 1] + v[i]) / 8.0;
 	}
-	for (int i = 0; i < par.nx_all; ++i)
+	for (int i = 0; i < par.nx_all; i++)
 	{
 		// calculating volume
 		V[i] = 1 / rho[i];
@@ -213,7 +228,9 @@ void CJ_Lagrange_1D::solve_step()
 		P[i] = (W[i] < 0.99) ? (1 - W[i]) * P_product : par.P_0;
 
 		// calculating temperature
-		T[i] = P[i] / rho[i] / solver_constants::R;
+		T[i] = P[i] / rho[i] / par.R;
+		
+		apply_boundary_conditions();
 	}
 }
 
@@ -225,14 +242,14 @@ void CJ_Lagrange_1D::write_data()
 	if (file.is_open())
 	{
 		double x_grid[par.nx_all];
-		double v_grid[par.nx_all];
-		for (int i = 0; i < par.nx_all; ++i)
+		//double v_grid[par.nx_all];
+		for (int i = 0; i < par.nx_all; i++)
 		{
 			x_grid[i] = 0.5 * (x[i + 1] + x[i]);
-			v_grid[i] = 0.5 * (v[i + 1] + v[i]);
+			//v_grid[i] = 0.5 * (v[i + 1] + v[i]);
 		}
 
-		for (int i = par.walls[0].n_fict; i < par.nx_all - par.walls[1].n_fict; ++i) 
+		for (int i = par.walls[0].n_fict; i < par.nx_all - par.walls[1].n_fict; i++) 
 			file << x_grid[i] << " " 
 				<< rho[i]  << " " 
 				<< W[i] << " " 

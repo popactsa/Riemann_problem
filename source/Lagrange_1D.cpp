@@ -16,6 +16,11 @@ Lagrange_1D::Lagrange_1D(std::filesystem::path _path)
 		std::cerr << error.what() << " " << error.code() << std::endl;
 	} // Needs to be handled in caller!
 
+Lagrange_1D& Lagrange_1D::operator=(Lagrange_1D&& _moved)
+{
+	par = std::move(_);
+}
+
 bool Lagrange_1D::start()
 {
 	try

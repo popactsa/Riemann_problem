@@ -10,7 +10,7 @@
 class Parser_Lagrange_1D final: public Parser_base<Parser_Lagrange_1D>
 {
 private:
-	Parameters_Lagrange_1D* pars_ptr;
+	std::unique_ptr<Parameters_Lagrange_1D> pars_ptr;
 protected:
 
 	Parameters_Lagrange_1D::viscosity interp_viscosity(std::string_view) const;

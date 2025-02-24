@@ -9,23 +9,20 @@
 #include <memory>
 #include <vector>
 
-class Lagrange_1D: public Solver_base {
+class Lagrange_1D final: public Solver_base<Lagrange_1D> 
+{
 	public:
 		Lagrange_1D(std::filesystem::path);
-		bool start() override;
-		void apply_boundary_conditions() override;
-		void solve_step() override;
-		void set_initial_conditions() override;
-		void get_time_step() override;
-		void write_data() override;
-		void check_parameters() override;
-		Parameters_Lagrange_1D* get_ptr_to_par()
-		{
-			return &par;
-		}
 	protected:
+		bool start_impl();
+		void apply_boundary_conditions_impl();
+		void solve_step_impl();
+		void set_initial_conditions_impl();
+		void get_time_step_impl();
+		void write_data_impl() const;
+		void check_parameters_impl() const;
+	private:
 		Parameters_Lagrange_1D par;
-		Parser_Lagrange_1D parser;
 		std::vector<double> P, rho, U, m;
 		std::vector<double> v, x;
 		std::vector<double> omega; //viscosity

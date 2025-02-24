@@ -118,27 +118,26 @@ constexpr void split_string(std::string_view init, C& result) // if get rid of e
 	split_string(init, result, ' ');
 }
 
-template<typename type>
-	requires (!std::assignable_from<type, std::string_view>)
-void split_string_to_v(std::string_view init, std::vector<type>& result, const char sep) // if get rid of expect-assertions, function can be declared constexpr
+std::vector<std::string_view> void split_string_view_to_v(std::string_view init, const char sep) 
 {
 	expect<Error_action::logging, std::length_error>(
 		[&](){return init.size() > 0; }, 
 		std::to_string(init.size()).c_str()
 	);
+	std::vector<std::string_view> result(2); // typical size is 2
 	std::size_t prev{0};
 	for (std::size_t current(init.find(sep, prev)); current != init.npos; prev = current + 1, current = init.find(sep, prev))
 	{
-		result.push_back(static_cast<std::string>(init.substr(prev, current - prev)));
+		result.push_back(static_cast<std::string_view>(init.substr(prev, current - prev)));
 	}
-	result.push_back(static_cast<std::string>(init.substr(prev)));
+	result.push_back(static_cast<std::string_view>(init.substr(prev)));
+	result.shrink_to_fit();
+	return result;
 }
 
-template<typename type>
-	requires (!std::assignable_from<type, std::string_view>)
-void split_string_to_v(std::string_view init, std::vector<type>& result) // if get rid of expect-assertions, function can be declared constexpr
+std::vector<std::string_view> split_string_view_to_v(std::string_view init) // if get rid of expect-assertions, function can be declared constexpr
 {
-	split_string_to_v(init, result, ' ');
+	return split_string_view_to_v(init, ' ');
 }
 
 inline int print_filenames(const std::filesystem::path& dir) noexcept

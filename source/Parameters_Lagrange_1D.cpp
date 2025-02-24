@@ -1,6 +1,6 @@
 #include "Parameters_Lagrange_1D.h"
 
-void* Parameters_Lagrange_1D::get_wall_property(std::string_view variable_name, void* object) const
+void* Parameters_Lagrange_1D::get_wall_property_impl(std::string_view variable_name, void* object) const
 {
 	if (!variable_name.compare("P"))
 		return &(static_cast<wall*>(object)->P);

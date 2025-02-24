@@ -23,6 +23,6 @@ class elasticity_Lagrange_1D: public iSolver {
 		std::vector<double> v, x;
 		std::vector<double> omega; //viscosity
 		double t, dt;
-		int step;
+	 	int step;
 };
 #endif

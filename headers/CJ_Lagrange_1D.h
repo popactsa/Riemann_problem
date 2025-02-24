@@ -2,6 +2,7 @@
 #define CJ_LAGRANGE_1D_H
 
 #include "CJ_Lagrange_1D.h"
+#include "CJ_Lagrange_1D_Parameters.h"
 #include "iSolver.h"
 #include "error_handling.h"
 #include "io_auxiliary.h"
@@ -18,9 +19,9 @@ class CJ_Lagrange_1D: public iSolver {
 		void write_data() override;
 		void check_parameters() override;
 	private:
-		const CJ_1D_Parameters par;
+		const CJ_Lagrange_1D_Parameters par;
 		std::vector<double> P, rho, U, V, W, T;
-		std::vector<double> v, x;
+		std::vector<double> v, x, m;
 		std::vector<double> omega; //viscosity
 		double t, dt;
 		int step;

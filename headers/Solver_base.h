@@ -7,7 +7,7 @@ class Solver_base
 private:
 	friend Solver_spec;
 	Solver_base() = default;
-protected:
+public:
 	void apply_boundary_conditions()
 	{
 		return static_cast<Solver_spec*>(this)->apply_boundary_conditions_impl();
@@ -32,7 +32,6 @@ protected:
 	{
 		return static_cast<const Solver_spec*>(this)->check_parameters_impl();
 	}
-public:
 	bool start()
 	{
 		return static_cast<Solver_spec*>(this)->start_impl();

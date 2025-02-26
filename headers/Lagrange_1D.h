@@ -2,18 +2,13 @@
 #define LAGRANGE_1D_H
 
 #include "Parameters_Lagrange_1D.h"
-#include "Parser_Lagrange_1D.h"
 #include "Solver_base.h"
-#include "error_handling.h"
-#include "io_auxiliary.h"
-#include <memory>
 #include <vector>
 
 class Lagrange_1D final: public Solver_base<Lagrange_1D> 
 {
 	public:
-		Lagrange_1D(std::filesystem::path);
-	protected:
+		Lagrange_1D(const std::filesystem::path&);
 		bool start_impl();
 		void apply_boundary_conditions_impl();
 		void solve_step_impl();

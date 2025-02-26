@@ -11,6 +11,28 @@ std::string time_to_string(const std::filesystem::file_time_type& ftime) noexcep
 	return str;
 }
 
+std::vector<std::string_view> split_string_view_to_v(std::string_view init, const char sep) 
+{
+	expect<Error_action::logging, std::length_error>(
+		[&](){return init.size() > 0; }, 
+		std::to_string(init.size()).c_str()
+	);
+	std::vector<std::string_view> result; 
+	result.reserve(2);
+	std::size_t prev{0};
+	for (std::size_t current(init.find(sep, prev)); current != init.npos; prev = current + 1, current = init.find(sep, prev))
+	{
+		result.push_back(static_cast<std::string_view>(init.substr(prev, current - prev)));
+	}
+	result.push_back(static_cast<std::string_view>(init.substr(prev)));
+	result.shrink_to_fit();
+	return result;
+}
+
+std::vector<std::string_view> split_string_view_to_v(std::string_view init) // if get rid of expect-assertions, function can be declared constexpr
+{
+	return split_string_view_to_v(init, ' ');
+}
 
 bool check_rmod(const std::filesystem::path& p) noexcept
 {

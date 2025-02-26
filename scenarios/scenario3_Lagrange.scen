@@ -5,8 +5,7 @@
 x_start 0.0
 x_end 1.0
 nx 100
-wall 0
-{
+wall 0 {
 	P 1
 	type noslip
 	v 1
@@ -18,8 +17,7 @@ write_file samplesample.csv
 gamma 1.4
 viscosity Neuman
 initial_conditions test1
-wall 1
-{
+wall 1 {
 	P 1
 	v 1
 	type noslip

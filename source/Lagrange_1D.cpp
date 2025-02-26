@@ -1,31 +1,14 @@
 #include "Lagrange_1D.h"
 #include "Parameters_Lagrange_1D.h"
 
-Lagrange_1D::Lagrange_1D(std::filesystem::path _path)
-	try:
-		par(),
-		parser(_path, &par)
-	{
-	}
-	catch(const std::bad_weak_ptr& error)
-	{
-		std::cerr << error.what();
-	}
-	catch(const std::ifstream::failure& error)
-	{
-		std::cerr << error.what() << " " << error.code() << std::endl;
-	} // Needs to be handled in caller!
+Lagrange_1D::Lagrange_1D(const std::filesystem::path& _path):
+	par(_path)
+{}
 
-Lagrange_1D& Lagrange_1D::operator=(Lagrange_1D&& _moved)
-{
-	par = std::move(_);
-}
-
-bool Lagrange_1D::start()
+bool Lagrange_1D::start_impl()
 {
 	try
 	{
-		parser.start();
 		using t_format = std::chrono::milliseconds;
 		const auto solve_start_tick_time = std::chrono::system_clock::now();
 		auto print_solve_time = print_time_between_on_exit([&]()
@@ -65,7 +48,7 @@ bool Lagrange_1D::start()
 	}
 }
 
-void Lagrange_1D::check_parameters()
+void Lagrange_1D::check_parameters_impl() const
 {
 	try
 	{
@@ -90,7 +73,7 @@ void Lagrange_1D::check_parameters()
 	}
 }
 
-void Lagrange_1D::set_initial_conditions()
+void Lagrange_1D::set_initial_conditions_impl()
 {
 	double middle_plain = par.x_start + 0.5 * (par.x_end - par.x_start);
 	for (auto it : par.walls)
@@ -163,7 +146,7 @@ void Lagrange_1D::set_initial_conditions()
 	}
 }
 
-void Lagrange_1D::apply_boundary_conditions()
+void Lagrange_1D::apply_boundary_conditions_impl()
 {
 	using enum Parameters_Lagrange_1D::wall::w_type;
 	for (int i = 0; i < par.number_of_walls; ++i)
@@ -183,7 +166,7 @@ void Lagrange_1D::apply_boundary_conditions()
 	}
 }
 
-void Lagrange_1D::get_time_step()
+void Lagrange_1D::get_time_step_impl()
 {
 	double min_dt = 1.0e6;
 	for (int i = 1; i < par.nx_all; ++i)
@@ -197,7 +180,7 @@ void Lagrange_1D::get_time_step()
 	dt = min_dt;
 }
 
-void Lagrange_1D::solve_step()
+void Lagrange_1D::solve_step_impl()
 {
 	apply_boundary_conditions();
 	get_time_step();
@@ -258,7 +241,7 @@ void Lagrange_1D::solve_step()
 	for (int i = 0; i < par.nx_all; ++i) P[i] = rho[i] * (par.gamma - 1.0) * U[i];	
 }
 
-void Lagrange_1D::write_data()
+void Lagrange_1D::write_data_impl() const
 {
 	std::string file_name = "../data/" + std::to_string(step) + ".csv";
 	std::ofstream file(file_name);

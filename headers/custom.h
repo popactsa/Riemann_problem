@@ -2,6 +2,9 @@
 #define CUSTOM_H
 
 #include <variant>
+#include <unordered_map>
+#include <string_view>
+#include <string>
 
 namespace custom
 {
@@ -94,5 +97,9 @@ using unordered_map_w_shs = std::unordered_map<key, value, custom::types::string
 // CRTP-polymorphism support
 template <typename ...types>
 using poly_t = std::variant<types...>;
+
+// Overloaded lambda-function trick
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 #endif

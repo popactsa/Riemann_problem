@@ -4,16 +4,16 @@
 #include <iostream>
 #include <string>
 #include <filesystem>
-#include <fstream>
 #include <chrono>
 #include <ctime>
+#include <string_view>
 #include <vector>
 #include <sys/ioctl.h>
-#include <stdio.h>
 #include <unistd.h>
 #include <array>
 #include <cmath>
 #include <initializer_list>
+#include <fstream>
 #include <unordered_map>
 #include <concepts>
 
@@ -118,27 +118,9 @@ constexpr void split_string(std::string_view init, C& result) // if get rid of e
 	split_string(init, result, ' ');
 }
 
-std::vector<std::string_view> void split_string_view_to_v(std::string_view init, const char sep) 
-{
-	expect<Error_action::logging, std::length_error>(
-		[&](){return init.size() > 0; }, 
-		std::to_string(init.size()).c_str()
-	);
-	std::vector<std::string_view> result(2); // typical size is 2
-	std::size_t prev{0};
-	for (std::size_t current(init.find(sep, prev)); current != init.npos; prev = current + 1, current = init.find(sep, prev))
-	{
-		result.push_back(static_cast<std::string_view>(init.substr(prev, current - prev)));
-	}
-	result.push_back(static_cast<std::string_view>(init.substr(prev)));
-	result.shrink_to_fit();
-	return result;
-}
+std::vector<std::string_view> split_string_view_to_v(std::string_view init, const char sep);
 
-std::vector<std::string_view> split_string_view_to_v(std::string_view init) // if get rid of expect-assertions, function can be declared constexpr
-{
-	return split_string_view_to_v(init, ' ');
-}
+std::vector<std::string_view> split_string_view_to_v(std::string_view init); // if get rid of expect-assertions, function can be declared constexpr
 
 inline int print_filenames(const std::filesystem::path& dir) noexcept
 {

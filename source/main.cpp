@@ -3,11 +3,11 @@
 #include <sys/ioctl.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <variant>
 
 #include "io_auxiliary.h"
 #include "Parameters_Lagrange_1D.h"
-#include "Parser_base.h"
-#include "Parser_Lagrange_1D.h"
+#include "Parser.h"
 #include "Lagrange_1D.h"
 #include "custom.h"
 struct winsize w;
@@ -33,18 +33,19 @@ int main()
 		int choose_item = choose_in_range(1, n_items);
 		auto [scenario_solver_type, scenario_file] = get_path_to_file_in_dir(scenario_dir, choose_item, postfix);
 		using enum solver_types;
-		poly_t<Lagrange_1D> solver;
+		poly_t<std::monostate, Lagrange_1D> solver;
 		switch(scenario_solver_type)
 		{
 			case solver_Lagrange_1D:
-				solver = std::move(Lagrange_1D(scenario_file));
+				solver = Lagrange_1D(scenario_file);
 				break;
 			case unknown:
 				break;
 		}
-		std::visit([](auto &act)
+		std::visit(overloaded
 			{
-				act.start();
+				[](std::monostate& sol){std::cout << "nothing!" << std::endl;},
+				[](auto& sol){sol.start();}
 			}, solver
 		);
 	}

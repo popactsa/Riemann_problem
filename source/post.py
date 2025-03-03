@@ -26,7 +26,7 @@ ax[2].plot(data.iloc[:, 0], data.iloc[:, 3], 'o-', lw = 1, markersize = 3)
 ax[2].title.set_text(r"Температура")
 ax[2].grid()
 
-fig.suptitle(r"Step : %d" %step, fontsize = 20)
+fig.suptitle(r"Step : %d" %(step), fontsize = 20)
 
 # plt.savefig("graph")
 plt.show()

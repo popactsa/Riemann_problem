@@ -34,7 +34,7 @@ int main()
 		CJ_Lagrange_1D task(pars);
 		if (task.start())
 		{
-			std::string post_start(static_cast<std::string>("python ../source/post.py ") + std::to_string(pars.nt / pars.nt_write - 1));
+			std::string post_start(static_cast<std::string>("python ../source/post.py ") + std::to_string(pars.nt / pars.nt_write));
 			system(post_start.c_str());
 #ifdef WIN32
 #else

@@ -36,27 +36,9 @@ bool CJ_Lagrange_1D::start()
 		for (step = 1; step <= par.nt; ++step)
 		{
 			solve_step();
-			if (step == 1)
-			{
-				// for (int i = 0; i < par.nx_all; i++)
-				// {
-				// 	std::cout << omega[i] << std::endl;
-				// }
-			}
 			t += dt;
 			if (step % par.nt_write == 0)
 				write_data();
-
-			// for (int i = 0; i < par.nx_all; i++)
-			// {
-			// 	std::cout << v[i] << std::endl;
-			// }
-			//  		std::cout << std::endl;
-			// for (int i = 0; i < par.nx_all + 1; i++)
-			// {
-			// 	std::cout << x[i] << std::endl;
-			// }
-			// std::cout << std::endl;
 		}
 
 		std::cout << "Chapman-Jouguet Lagrange 1D calculations : done!" << std::endl;
@@ -147,10 +129,9 @@ void CJ_Lagrange_1D::apply_boundary_conditions()
 				v[edge] = -v[edge + second_shift] + 2 * v[edge + first_shift];
 				break;
 			
-			rho[corrected_edge] = rho[corrected_edge + first_shift];
-			U[corrected_edge] = U[corrected_edge + first_shift];
-
 		}
+		rho[corrected_edge] = rho[corrected_edge + first_shift];
+		U[corrected_edge] = U[corrected_edge + first_shift];
 	}
 }
 
@@ -171,10 +152,8 @@ void CJ_Lagrange_1D::get_time_step()
 
 void CJ_Lagrange_1D::solve_step()
 {
-	//TODO check order
 	get_time_step();
-	apply_boundary_conditions();
-	
+
 	double v_last[par.nx_all + 1];
 	for (int i = 0; i < par.nx_all + 1; ++i)
 		v_last[i] = v[i]; // Last solved layer of v
@@ -196,7 +175,9 @@ void CJ_Lagrange_1D::solve_step()
 	// calculating v
 	for (int i = par.walls[0].n_fict + 1; i < par.nx_all - par.walls[1].n_fict; ++i) 
 		v[i] = v[i] - ((P[i] + omega[i]) - (P[i - 1] + omega[i - 1])) * dt / (0.5 * (m[i] + m[i - 1]));
-
+	
+	
+	apply_boundary_conditions();
 	
 	// recalculating x
 	for (int i = 0; i < par.nx_all + 1; ++i)
@@ -215,6 +196,7 @@ void CJ_Lagrange_1D::solve_step()
 			+ (v_last[i + 1] + v_last[i]) * (v_last[i + 1] + v_last[i]) / 8.0 
 			- (v[i + 1] + v[i]) * (v[i + 1] + v[i]) / 8.0;
 	}
+	apply_boundary_conditions();
 	for (int i = 0; i < par.nx_all; ++i)
 	{
 		// calculating volume
@@ -229,13 +211,13 @@ void CJ_Lagrange_1D::solve_step()
 		else
 			W[i] = 1.0;
 		
+	
 		// calculating pressure
 		double P_product = (par.gamma - 1.0) * rho[i] * (U[i] + par.Q);
 		P[i] = (W[i] < 0.99) ? (1 - W[i]) * P_product : par.P_0;
 
 		// calculating temperature
 		T[i] = P[i] / rho[i] / par.R;
-
 	}
 }
 

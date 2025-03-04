@@ -147,7 +147,9 @@ void CJ_Lagrange_1D::apply_boundary_conditions()
 				v[edge] = -v[edge + second_shift] + 2 * v[edge + first_shift];
 				break;
 			
+			rho[corrected_edge] = rho[corrected_edge + first_shift];
 			U[corrected_edge] = U[corrected_edge + first_shift];
+
 		}
 	}
 }

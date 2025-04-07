@@ -1,12 +1,12 @@
-#Sample
+! SolverType WENO3_1D
 x_start 0.0
 x_end 1.0
 nx 100
 nx 1
 wall 0
-	P 1
-	v 1
-	type noslip
+    P 1
+    v 1
+    type noslip
 #CFL 0.5
 nt 100
 nt_write 1

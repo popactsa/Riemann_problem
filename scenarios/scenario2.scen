@@ -1,17 +1,15 @@
-! SolverType WENO3_1D
+#Sample
+#delimiter can be set up at Parameters(std::ifstream&) constructor
+#first line is always a solver type name
+!SolverType Lagrange1D
 x_start 0.0
 x_end 1.0
 nx 100
-nx 1
-wall 0
-    P 1
-    v 1
-    type noslip
-#CFL 0.5
+CFL 0.5
 nt 100
 nt_write 1
 write_file samplesample.csv
-gamma 1.2
+gamma 1.4
 viscosity Neuman
-ic test1
+initial_conditions test1
 is_conservative 1

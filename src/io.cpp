@@ -129,7 +129,7 @@ bool IsReadable(const fs::path& p) noexcept
 }
 
 std::pair<Solvers, fs::path>
-GetScenToFileInDir(const fs::path& dir,
+GetPathToScenInDir(const fs::path& dir,
                    std::size_t min,
                    std::size_t max,
                    std::string_view postfix) noexcept
@@ -145,9 +145,7 @@ GetScenToFileInDir(const fs::path& dir,
               && dir_entry.path().string().ends_with(postfix))) {
             continue;
         }
-        if (cnt < chosen) {
-            ++cnt;
-        } else if (cnt != chosen) {
+        if (++cnt != chosen) {
             continue;
         }
         ScenParsingLine parsed_line;
@@ -156,8 +154,10 @@ GetScenToFileInDir(const fs::path& dir,
         if (fin.is_open()) {
             while (std::getline(fin, line)) {
                 parsed_line = line;
-                if (parsed_line.head_spec_char()
-                    == ScenParsingLine::HeadSpecialChars::qCommentary
+                if ((parsed_line.head_spec_char()
+                     != ScenParsingLine::HeadSpecialChars::qNotSet
+                     || parsed_line.head_spec_char()
+                     != ScenParsingLine::HeadSpecialChars::qEndGroup)
                     && parsed_line
                     && parsed_line.name()
                     == "SolverType")

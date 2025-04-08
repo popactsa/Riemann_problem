@@ -1,6 +1,7 @@
 #ifndef SCEN_PARSING_LINE_H
 #define SCEN_PARSING_LINE_H
 
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -31,6 +32,18 @@ public:
     ScenParsingLine(const ScenParsingLine&) = default;
     explicit ScenParsingLine(const std::string& line) noexcept { *this = line; }
     ScenParsingLine& operator=(const std::string& rhs) noexcept;
+    void print() const noexcept
+    {
+        std::cout << "===============" << std::endl;
+        std::cout << static_cast<char>(head_spec_char_) << std::endl;
+        std::cout << name_ << std::endl;
+        for (auto it : args_) {
+            std::cout << it << ' ';
+        }
+        std::cout << std::endl;
+        std::cout << static_cast<char>(tail_spec_char_) << std::endl;
+        std::cout << "===============" << std::endl;
+    }
     const std::string& operator[](const std::size_t index) const noexcept
     {
         return args_[index];

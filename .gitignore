@@ -22,6 +22,10 @@ headers/~/*
 
 build/*
 
+./.cache
+
+./.clangd
+
 *.png
 
 readme.md

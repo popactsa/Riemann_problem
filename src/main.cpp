@@ -26,6 +26,7 @@ int main()
             line = string_line;
             parser.ParseLine(line);
         }
+        std::cout << solver.wall.P << std::endl;
     }
     return 0;
 }

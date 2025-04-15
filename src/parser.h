@@ -1,6 +1,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include "Solver_Lagrange_1D.h"
 #include "concepts.h"
 #include "error_handling.h"
 #include "iSolver.h"
@@ -119,6 +120,8 @@ void Parser<S>::AssignValue(
         *static_cast<uint*>(object.ptr()) = std::stoul(line[0]);
     } else if (object.type() == "string"sv) {
         *static_cast<std::string*>(object.ptr()) = line[0];
+    } else {
+        solver_.AssignEnumValue(object.type(), line.args(), object.ptr());
     }
 }
 #endif // PARSER_H

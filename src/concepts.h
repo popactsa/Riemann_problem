@@ -61,4 +61,22 @@ concept IsCRTPBaseOfValue = IsCRTPBaseOf<CRTP_Base, CRTP_Derived>::value;
 template <class T, class U>
 concept IsBaseOfValue = IsBaseOf<T, U>::value;
 
+// Hash-function to allow heterogenious search with std::string_view
+// in unordered containers
+struct StringHash {
+    using is_transparent = void;
+    [[nodiscard]] size_t operator()(const char* txt) const
+    {
+        return std::hash<std::string_view>{}(txt);
+    }
+    [[nodiscard]] size_t operator()(std::string_view txt) const
+    {
+        return std::hash<std::string_view>{}(txt);
+    }
+    [[nodiscard]] size_t operator()(const std::string& txt) const
+    {
+        return std::hash<std::string>{}(txt);
+    }
+};
+
 #endif // CONCEPTS_H

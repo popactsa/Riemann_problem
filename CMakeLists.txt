@@ -20,6 +20,7 @@ set(SOURCES
     src/main.cpp
     src/io.cpp
     src/parsing_line.cpp
+    src/Solver_Lagrange_1D.cpp
 )
 
 HEADER_DIRECTORIES(header_dir_list)

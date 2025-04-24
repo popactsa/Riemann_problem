@@ -1,29 +1,25 @@
 #include "parsing_line.h"
 
+#include "error_handling.h"
 #include "io.h"
 #include <algorithm>
+#include <fstream>
 #include <iterator>
 
-ScenParsingLine& ScenParsingLine::operator=(const std::string& line) noexcept
+void ScenParsingLine::Load(const std::string& line) noexcept
 {
-    name_.clear();
-    head_spec_char_ = HeadSpecialChars(HeadSpecialChars::qNotSet);
-    tail_spec_char_ = TailSpecialChars(TailSpecialChars::qNotSet);
-    args_.clear();
+    ResetPreserveIndex();
 
-    success_ = true;
-    std::vector<std::string> split;
-    SplitString(line, ' ', split);
+    std::vector<std::string> split = SplitString(line, ' ');
     if (split.size() == 0) {
         success_ = false;
-        return *this;
     }
     {
         using enum HeadSpecialChars;
         switch (split[0][0]) {
         case static_cast<char>(qCommentary):
             head_spec_char_ = qCommentary;
-            break;
+            return;
         case static_cast<char>(qEndGroup):
             head_spec_char_ = qEndGroup;
             break;
@@ -41,7 +37,6 @@ ScenParsingLine& ScenParsingLine::operator=(const std::string& line) noexcept
 
     if (split.size() < 2) {
         success_ = false;
-        return *this;
     }
     args_.reserve(split.size() - 1);
     std::copy(split.cbegin() + 1, split.cend(), std::back_inserter(args_));
@@ -62,7 +57,10 @@ ScenParsingLine& ScenParsingLine::operator=(const std::string& line) noexcept
         && head_spec_char_
         != HeadSpecialChars::qNotSet) {
         success_ = false;
-        return *this;
     }
-    return *this;
+}
+
+void ScenParsingLine::SetIndex()
+{
+    index_ = std::stoul(args_.at(0));
 }

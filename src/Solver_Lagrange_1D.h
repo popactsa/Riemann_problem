@@ -1,49 +1,35 @@
-#ifndef SOLVER_LAGRANGE_1D
-#define SOLVER_LAGRANGE_1D
+#ifndef SOLVER_LAGRANGE_1D_H
+#define SOLVER_LAGRANGE_1D_H
 
+#include "Parser.h"
+#include "auxiliary_functions.h"
 #include "iSolver.h"
-#include <array>
-
-class Solver_Lagrange_1D;
+#include <tuple>
 
 template <>
-class Wall<Solver_Lagrange_1D> : std::true_type {
-public:
+struct Wall<Solver_Lagrange_1D> : std::true_type {
+    using PolyParsers =
+        std::variant<std::monostate, Parser<int>, Parser<double>>;
     double P;
     double v;
-
-    inline std::unordered_map<
-        std::string_view,
-        const iSolver<Solver_Lagrange_1D>::ParameterInfo>::iterator
-    FindInParsingTable(std::string_view key) noexcept
-    {
-        return parsing_table.find(key);
-    };
-    std::unordered_map<std::string_view,
-                       const iSolver<Solver_Lagrange_1D>::ParameterInfo>
-        parsing_table{{"P", {"double", &P}}, {"v", {"double", &v}}};
+    dash::TinyMap<std::string_view, PolyParsers, 2> parsing_table{{"P", &P},
+                                                                  {"v", &v}};
 };
 
 class Solver_Lagrange_1D : public iSolver<Solver_Lagrange_1D> {
 public:
     enum class Tests { qTest1, qTest2, qTest3, qTest4 };
 
+    void Start() noexcept;
     Solver_Lagrange_1D() = default;
-    inline std::unordered_map<std::string_view, const ParameterInfo>::iterator
-    FindInParsingTable(std::string_view key) noexcept
-    {
-        return parsing_table.find(key);
-    };
-    inline std::unordered_set<std::string_view>::iterator
-    FindInGroupNames(std::string_view item) noexcept
-    {
-        return group_names.find(item);
-    }
-    void AssignEnumValue(std::string_view type,
-                         const std::vector<std::string>& args,
-                         void* ptr) noexcept;
-    Wall<Solver_Lagrange_1D> wall;
 private:
+    using PolyParsers =
+        std::variant<std::monostate,
+                     Parser<int>,
+                     Parser<double>,
+                     Parser<std::size_t>,
+                     Parser<std::string>,
+                     Parser<std::array<Wall<Solver_Lagrange_1D>, 2>>>;
     std::size_t nx;
     std::size_t nt;
     std::size_t nt_write;
@@ -53,20 +39,18 @@ private:
     double gamma;
     std::string write_file;
     Tests test;
+    std::array<Wall<Solver_Lagrange_1D>, 2> walls;
 
-    std::unordered_set<std::string_view> group_names{"wall"};
-    std::unordered_map<std::string_view,
-                       const iSolver<Solver_Lagrange_1D>::ParameterInfo>
-        parsing_table{{"x_start", {"double", &x_start}},
-                      {"x_end", {"double", &x_end}},
-                      {"CFL", {"double", &CFL}},
-                      {"gamma", {"double", &gamma}},
-                      {"nt_write", {"uint", &nt_write}},
-                      {"write_file", {"string", &write_file}},
-                      {"nt", {"uint", &nt}},
-                      {"test", {"Tests", &test}},
-                      {"wall", {"Wall", &wall}},
-                      {"nx", {"uint", &nx}}};
+    dash::TinyMap<std::string_view, PolyParsers, 9> parsing_table{
+        {"x_start", &x_start},
+        {"x_end", &x_end},
+        {"CFL", &CFL},
+        {"gamma", &gamma},
+        {"nt_write", &nt_write},
+        {"write_file", &write_file},
+        {"nt", &nt},
+        {"wall", &walls},
+        {"nx", &nx}};
 };
 
-#endif // SOLVER_LAGRANGE_1D
+#endif // SOLVER_LAGRANGE_1D_H

@@ -1,11 +1,11 @@
-#include <cstdio>
-#include <fstream>
 #include <iostream>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <variant>
 
+#include "Solver_Lagrange_1D.h"
+#include "error_handling.h"
 #include "io.h"
-#include "parser.h"
 
 struct winsize w;
 int main()
@@ -15,18 +15,19 @@ int main()
         std::cout << "Choose scenario from " << qScenDir << " : " << std::endl;
         std::size_t n_items = PrintFilenames(qScenDir, qPostfix);
         auto [scenario_solver_type, scenario_file] =
-            GetPathToScenInDir(qScenDir, 0, n_items, qPostfix);
-
-        Solver_Lagrange_1D solver;
-        std::ifstream fin(scenario_file);
-        std::string string_line;
-        ScenParsingLine line;
-        Parser<Solver_Lagrange_1D> parser(solver);
-        while (std::getline(fin, string_line)) {
-            line = string_line;
-            parser.ParseLine(line);
+            ChooseFileInDir(qScenDir, 0, n_items, qPostfix);
+        PolySolver Solver;
+        switch (scenario_solver_type) {
+            using enum Solvers;
+        case qLagrange1D: {
+            Solver = Solver_Lagrange_1D();
+            break;
         }
-        std::cout << solver.wall.P << std::endl;
+        default: {
+            throw dash::ParserException("Incorrect solver name");
+            break;
+        }
+        }
     }
     return 0;
 }

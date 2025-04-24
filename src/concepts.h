@@ -4,6 +4,7 @@
 #include <concepts>
 #include <iterator>
 
+namespace dash {
 template <class C>
 concept Container = requires(C a, const C b) {
     // Containers with iterators, copy/move constructors, destructors
@@ -78,5 +79,14 @@ struct StringHash {
         return std::hash<std::string>{}(txt);
     }
 };
+
+template <class... Ts>
+struct overloaded : Ts... {
+    using Ts::operator()...;
+};
+template <class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
+
+} // namespace dash
 
 #endif // CONCEPTS_H

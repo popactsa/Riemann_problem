@@ -7,6 +7,8 @@
 #include <sys/ioctl.h>
 #include <unordered_map>
 
+#include "Solver_Lagrange_1D.h"
+#include "error_handling.h"
 #include "iSolver.h"
 #include "parsing_line.h"
 
@@ -16,13 +18,13 @@ namespace {
 inline constexpr std::size_t qAscTimeStrSize = 25;
 inline constexpr std::size_t qMaxFilenameSize = 35;
 inline constexpr std::size_t qMaxSolvernameSize = 15;
-std::unordered_map<std::string_view, Solvers> SolversNameTypeTable{
+std::unordered_map<std::string, Solvers> SolversNameTypeTable{
     {"Lagrange1D", Solvers::qLagrange1D},
     {"WENO3_1D", Solvers::qWENO3_1D},
     {"Godunov1D", Solvers::qGodunov1D}};
 
-std::size_t ChooseFileInRange(const std::size_t min,
-                              const std::size_t max) noexcept
+std::size_t ChooseFileNumberInRange(const std::size_t min,
+                                    const std::size_t max) noexcept
 // @returns : a number of a entered via std::cin file
 // Checks if file is readable, chosen number fits in [min, max]
 {
@@ -57,26 +59,22 @@ std::string GetScenSolverName(const fs::path& file) noexcept
 // @returns : Solver's name
 // If read name is found in table prints it, else prints "unknown"
 {
-    std::string result = "unknown";
     std::ifstream fin(file);
     if (fin.is_open()) {
         std::string line;
+        ScenParsingLine parsed;
         while (std::getline(fin, line)) {
-            ScenParsingLine parsed(line);
-            if (parsed.head_spec_char()
-                != ScenParsingLine::HeadSpecialChars::qFileInfo
-                || parsed.name()
-                != "SolverType") {
+            parsed.Load(line);
+            if (!parsed.is_SolverType()) {
                 continue;
             }
-            auto found = SolversNameTypeTable.find(parsed.args()[0]);
+            auto found = SolversNameTypeTable.find(parsed.get_args()[0]);
             if (found != SolversNameTypeTable.end()) {
-                result = found->first;
-                break;
+                return found->first;
             }
         }
     }
-    return result;
+    return std::string("unknown");
 }
 
 std::string ConvertFSTimeToString(const fs::file_time_type& time) noexcept
@@ -128,15 +126,14 @@ bool IsReadable(const fs::path& p) noexcept
     return true;
 }
 
-std::pair<Solvers, fs::path>
-GetPathToScenInDir(const fs::path& dir,
-                   std::size_t min,
-                   std::size_t max,
-                   std::string_view postfix) noexcept
+std::pair<Solvers, fs::path> ChooseFileInDir(const fs::path& dir,
+                                             std::size_t min,
+                                             std::size_t max,
+                                             std::string_view postfix) noexcept
 {
-    std::size_t chosen = ChooseFileInRange(min, max);
+    std::size_t chosen = ChooseFileNumberInRange(min, max);
     std::size_t cnt = 0;
-    for (auto const& dir_entry : std::filesystem::directory_iterator{
+    for (const auto& dir_entry : std::filesystem::directory_iterator{
              dir, std::filesystem::directory_options::skip_permission_denied}) {
         using enum std::filesystem::perms;
         auto file_perms = std::filesystem::status(dir_entry).permissions();
@@ -148,26 +145,22 @@ GetPathToScenInDir(const fs::path& dir,
         if (++cnt != chosen) {
             continue;
         }
+
         ScenParsingLine parsed_line;
         std::string line;
         std::ifstream fin(dir_entry.path());
         if (fin.is_open()) {
             while (std::getline(fin, line)) {
-                parsed_line = line;
-                if ((parsed_line.head_spec_char()
-                     != ScenParsingLine::HeadSpecialChars::qNotSet
-                     || parsed_line.head_spec_char()
-                     != ScenParsingLine::HeadSpecialChars::qEndGroup)
-                    && parsed_line
-                    && parsed_line.name()
-                    == "SolverType")
+                parsed_line.Load(line);
+                if (parsed_line.is_SolverType()) {
                     break;
+                }
             }
             if (fin.eof()) {
                 return {Solvers::qUnknown, dir_entry.path()};
             }
             Solvers solver_type = Solvers::qUnknown;
-            auto found = SolversNameTypeTable.find(parsed_line[0]);
+            auto found = SolversNameTypeTable.find(parsed_line.get_args()[0]);
             if (found != SolversNameTypeTable.end())
                 solver_type = found->second;
             fin.close();
@@ -195,6 +188,10 @@ std::size_t PrintFilenames(const fs::path& dir,
     for (const auto& dir_entry : fs::directory_iterator{
              dir, fs::directory_options::skip_permission_denied}) {
         using enum std::filesystem::perms;
+        std::string rp_str = std::filesystem::relative(dir_entry.path(), dir);
+        if (!rp_str.ends_with(postfix)) {
+            continue;
+        }
         ++cnt;
         if constexpr (__cpp_lib_format) {
             if (w.ws_col
@@ -210,8 +207,6 @@ std::size_t PrintFilenames(const fs::path& dir,
                 continue;
             }
             std::string solver_name_read = GetScenSolverName(dir_entry.path());
-            std::string rp_str{static_cast<std::string>(
-                std::filesystem::relative(dir_entry.path(), dir))};
             std::string time_str{
                 ConvertFSTimeToString(dir_entry.last_write_time())};
             std::cout
@@ -220,12 +215,25 @@ std::size_t PrintFilenames(const fs::path& dir,
                                                            time_str))
                 << std::endl;
         } else {
-            std::cout
-                << cnt
-                << " : "
-                << std::filesystem::relative(dir_entry.path(), dir).string()
-                << std::endl;
+            std::cout << cnt << " : " << rp_str << std::endl;
         }
     }
     return cnt;
+}
+
+void ReadParameters(PolySolver& variant_solver, fs::path path) noexcept
+{
+    dash::Expect<dash::ErrorAction::qTerminating, std::exception>(
+        [&variant_solver]() {
+            return !std::holds_alternative<std::monostate>(variant_solver);
+        },
+        "Incorrect solver type provided");
+    ScenParsingLine line;
+    std::ifstream fin(path);
+    dash::Expect<dash::ErrorAction::qTerminating, std::exception>(
+        [&fin]() { return fin.is_open(); }, "Can't open a file");
+    std::string read;
+    while (std::getline(fin, read)) {
+        line.Load(read);
+    }
 }

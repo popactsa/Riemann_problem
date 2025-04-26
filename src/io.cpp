@@ -199,11 +199,7 @@ std::size_t PrintFilenames(const fs::path& dir,
                 + init_size
                 + qMaxFilenameSize
                 + qMaxSolvernameSize) {
-                std::cout
-                    << cnt
-                    << " : "
-                    << std::filesystem::relative(dir_entry.path(), dir).string()
-                    << std::endl;
+                std::cout << cnt << " : " << rp_str << std::endl;
                 continue;
             }
             std::string solver_name_read = GetScenSolverName(dir_entry.path());
@@ -221,19 +217,24 @@ std::size_t PrintFilenames(const fs::path& dir,
     return cnt;
 }
 
-void ReadParameters(PolySolver& variant_solver, fs::path path) noexcept
+void ReadParameters(PolySolver& solver, fs::path path) noexcept
 {
     dash::Expect<dash::ErrorAction::qTerminating, std::exception>(
-        [&variant_solver]() {
-            return !std::holds_alternative<std::monostate>(variant_solver);
-        },
+        [&solver]() { return !std::holds_alternative<std::monostate>(solver); },
         "Incorrect solver type provided");
-    ScenParsingLine line;
     std::ifstream fin(path);
     dash::Expect<dash::ErrorAction::qTerminating, std::exception>(
         [&fin]() { return fin.is_open(); }, "Can't open a file");
+    ScenParsingLine line;
+    ScenParsingLine parent_line;
     std::string read;
     while (std::getline(fin, read)) {
         line.Load(read);
+        // std::visit(dash::overloaded{[]([[maybe_unused]] std::monostate& arg)
+        // {},
+        //                             [&line]([[maybe_unused]] auto& arg) {
+        //                                 arg.Parse(line);
+        //                             }},
+        //            solver);
     }
 }

@@ -5,11 +5,11 @@
 #include "auxiliary_functions.h"
 #include "iSolver.h"
 #include <tuple>
+#include <variant>
 
 template <>
 struct Wall<Solver_Lagrange_1D> : std::true_type {
-    using PolyParsers =
-        std::variant<std::monostate, Parser<int>, Parser<double>>;
+    using PolyParsers = std::variant<std::monostate, Parser<double>>;
     double P;
     double v;
     dash::TinyMap<std::string_view, PolyParsers, 2> parsing_table{{"P", &P},
@@ -19,10 +19,6 @@ struct Wall<Solver_Lagrange_1D> : std::true_type {
 class Solver_Lagrange_1D : public iSolver<Solver_Lagrange_1D> {
 public:
     enum class Tests { qTest1, qTest2, qTest3, qTest4 };
-
-    void Start() noexcept;
-    Solver_Lagrange_1D() = default;
-private:
     using PolyParsers =
         std::variant<std::monostate,
                      Parser<int>,
@@ -30,6 +26,10 @@ private:
                      Parser<std::size_t>,
                      Parser<std::string>,
                      Parser<std::array<Wall<Solver_Lagrange_1D>, 2>>>;
+
+    void Start() noexcept;
+    Solver_Lagrange_1D() = default;
+private:
     std::size_t nx;
     std::size_t nt;
     std::size_t nt_write;

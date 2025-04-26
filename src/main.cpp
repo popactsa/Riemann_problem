@@ -1,7 +1,6 @@
 #include <iostream>
 #include <sys/ioctl.h>
 #include <unistd.h>
-#include <variant>
 
 #include "Solver_Lagrange_1D.h"
 #include "error_handling.h"

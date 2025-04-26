@@ -1,6 +1,7 @@
 #ifndef ISOLVER_H
 #define ISOLVER_H
 
+#include "parsing_line.h"
 #include <string_view>
 #include <tuple>
 #include <type_traits>

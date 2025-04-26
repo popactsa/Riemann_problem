@@ -1,66 +1,73 @@
+#include "error_handling.h"
 #include "parsing_line.h"
 
-#include "error_handling.h"
 #include "io.h"
 #include <algorithm>
-#include <fstream>
 #include <iterator>
+
+ScenParsingLine::VariableType
+operator|=(ScenParsingLine::VariableType& lhs,
+           const ScenParsingLine::VariableType& rhs) noexcept
+{
+    using ut = std::underlying_type_t<ScenParsingLine::VariableType>;
+    lhs = static_cast<ScenParsingLine::VariableType>(static_cast<ut>(lhs)
+                                                     | static_cast<ut>(rhs));
+    return lhs;
+}
 
 void ScenParsingLine::Load(const std::string& line) noexcept
 {
-    ResetPreserveIndex();
+    Reset();
 
+    std::size_t pop_words = 0;
     std::vector<std::string> split = SplitString(line, ' ');
-    if (split.size() == 0) {
-        success_ = false;
-    }
-    {
+    switch (static_cast<HeadSpecialChars>(split[0][0])) {
         using enum HeadSpecialChars;
-        switch (split[0][0]) {
-        case static_cast<char>(qCommentary):
-            head_spec_char_ = qCommentary;
-            return;
-        case static_cast<char>(qEndGroup):
-            head_spec_char_ = qEndGroup;
-            break;
-        case static_cast<char>(qFileInfo):
-            head_spec_char_ = qFileInfo;
-            break;
-        default:
-            head_spec_char_ = qNotSet;
-            break;
-        }
+    case qCommentary: {
+        head_spec_char_ = qCommentary;
+        return;
+    }
+    case qFileInfo: {
+        head_spec_char_ = qFileInfo;
+        break;
+    }
+    default: {
+        head_spec_char_ = qNotSet;
+        break;
+    }
     }
     std::size_t offset = head_spec_char_ == HeadSpecialChars::qNotSet ? 0 : 1;
     name_.resize(split[0].size() - offset);
     std::copy(split[0].cbegin() + offset, split[0].cend(), name_.begin());
+    ++pop_words;
 
-    if (split.size() < 2) {
-        success_ = false;
-    }
-    args_.reserve(split.size() - 1);
-    std::copy(split.cbegin() + 1, split.cend(), std::back_inserter(args_));
-    {
-        using enum TailSpecialChars;
-        switch (args_.back().back()) {
-        case static_cast<char>(qBeginGroup):
-            tail_spec_char_ = qBeginGroup;
-            break;
-        default:
-            tail_spec_char_ = qNotSet;
-            break;
-        }
+    try {
+        index_ = std::stoul(split[1]);
+        type_ |= VariableType::qArrayType;
+        ++pop_words;
+    } catch (const std::invalid_argument& err) {
+    } catch (const std::out_of_range& err) {
+        std::terminate();
     }
 
-    if (static_cast<char>(head_spec_char_)
-        == static_cast<char>(tail_spec_char_)
-        && head_spec_char_
-        != HeadSpecialChars::qNotSet) {
-        success_ = false;
+    switch (static_cast<TypeSpecialChars>(split[pop_words][0])) {
+        using enum TypeSpecialChars;
+    case qCompoundType: {
+        type_ |= VariableType::qCompoundType;
+        ++pop_words;
+        break;
     }
-}
+    default: {
+        break;
+    }
+    }
 
-void ScenParsingLine::SetIndex()
-{
-    index_ = std::stoul(args_.at(0));
+    dash::Expect<dash::ErrorAction::qTerminating, dash::InvalidLineFormat>(
+        [&split, &pop_words]() { return split.size() > pop_words; },
+        "No arguments to variable passed");
+
+    if (split.size() <= pop_words)
+        args_.reserve(split.size() - pop_words);
+    std::copy(split.cbegin() + pop_words, split.cend(),
+              std::back_inserter(args_));
 }

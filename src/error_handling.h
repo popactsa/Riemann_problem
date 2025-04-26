@@ -44,6 +44,11 @@ public:
     explicit InvalidReadName(const std::string& msg) : ParserException(msg) {}
 };
 
+class InvalidLineFormat : public ParserException {
+public:
+    explicit InvalidLineFormat(const std::string& msg) : ParserException(msg) {}
+};
+
 enum class ErrorAction { qIgnore, qThrowing, qTerminating, qLogging };
 
 constexpr ErrorAction qDefaultErrorAction = ErrorAction::qThrowing;

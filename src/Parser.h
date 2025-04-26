@@ -2,6 +2,7 @@
 #define PARSER_H
 
 #include "concepts.h"
+#include "error_handling.h"
 #include "iSolver.h"
 #include "parsing_line.h"
 #include <variant>
@@ -12,7 +13,7 @@ class Parser {
     // Common `Parser` for all types which have `parsing_table`
 public:
     constexpr Parser(T* target) : target_(target) {}
-    void Parse(const ScenParsingLine& line)
+    void Parse(const ScenParsingLine& line, std::size_t pos)
     {
         Parser(target_->parsing_table.at(line.get_name())).Parse(line);
     }
@@ -26,12 +27,17 @@ private:
 template <typename T>
     requires dash::Container<T>
 // Only contigious containers
+// Compound variable doesn't consist of other compound types, only simple ones
 class Parser<T> {
 public:
     constexpr Parser(T* target) noexcept : target_(target) {}
-    void Parse(const ScenParsingLine& line)
+    void Parse(const ScenParsingLine& line, [[maybe_unused]] std::size_t pos)
     {
-        Parser(target_.data() + line.get_index()).Parse(line);
+        std::size_t index = Parser(line.get_args().at(0));
+        dash::Expect<dash::ErrorAction::qTerminating, std::range_error>(
+            [&index, this]() { return target_->size() < index; },
+            "Incorrect array element index read");
+        Parser(target_.data() + index).Parse(line, 1);
     }
 private:
     T* target_;
@@ -41,9 +47,9 @@ template <>
 class Parser<int> {
 public:
     constexpr Parser(int* target) noexcept : target_(target) {}
-    void Parse(const ScenParsingLine& line)
+    void Parse(const ScenParsingLine& line, const std::size_t pos)
     {
-        *target_ = std::stoi(line.get_args().at(0));
+        *target_ = std::stoi(line.get_args().at(pos));
     }
 private:
     int* target_;
@@ -53,9 +59,9 @@ template <>
 class Parser<std::size_t> {
 public:
     constexpr Parser(std::size_t* target) noexcept : target_(target) {}
-    void Parse(const ScenParsingLine& line)
+    void Parse(const ScenParsingLine& line, const std::size_t pos)
     {
-        *target_ = std::stoul(line.get_args().at(0));
+        *target_ = std::stoul(line.get_args().at(pos));
     }
 private:
     std::size_t* target_;
@@ -65,9 +71,9 @@ template <>
 class Parser<double> {
 public:
     constexpr Parser(double* target) noexcept : target_(target) {}
-    void Parse(const ScenParsingLine& line)
+    void Parse(const ScenParsingLine& line, const std::size_t pos)
     {
-        *target_ = std::stod(line.get_args().at(0));
+        *target_ = std::stod(line.get_args().at(pos));
     }
 private:
     double* target_;
@@ -77,9 +83,9 @@ template <>
 class Parser<std::string> {
 public:
     constexpr Parser(std::string* target) noexcept : target_(target) {}
-    void Parse(const ScenParsingLine& line)
+    void Parse(const ScenParsingLine& line, const std::size_t pos)
     {
-        *target_ = line.get_args().at(0);
+        *target_ = line.get_args().at(pos);
     }
 private:
     std::string* target_;

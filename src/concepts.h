@@ -41,6 +41,15 @@ concept HasBackInserterContainer = requires(C a, const C b) {
     { std::back_inserter(a) };
 };
 
+template <class T, template <class...> class U>
+inline constexpr bool is_instance_of_v = std::false_type{};
+
+template <template <class...> class U, class... Vs>
+inline constexpr bool is_instance_of_v<U<Vs...>, U> = std::true_type{};
+
+template <class T, template <class...> class U>
+concept IsInstanceOfV = is_instance_of_v<T, U>;
+
 // Convenient structs
 template <class T>
 struct RemoveCVRef : std::remove_cv<std::remove_reference_t<T>> {};

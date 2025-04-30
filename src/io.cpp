@@ -65,10 +65,10 @@ std::string GetScenSolverName(const fs::path& file) noexcept
         ScenParsingLine parsed;
         while (std::getline(fin, line)) {
             parsed.Load(line);
-            if (!parsed.is_SolverType()) {
+            if (!parsed.IsSolverType()) {
                 continue;
             }
-            auto found = SolversNameTypeTable.find(parsed.get_args()[0]);
+            auto found = SolversNameTypeTable.find(parsed.get_common_arg_at(0));
             if (found != SolversNameTypeTable.end()) {
                 return found->first;
             }
@@ -152,7 +152,7 @@ std::pair<Solvers, fs::path> ChooseFileInDir(const fs::path& dir,
         if (fin.is_open()) {
             while (std::getline(fin, line)) {
                 parsed_line.Load(line);
-                if (parsed_line.is_SolverType()) {
+                if (parsed_line.IsSolverType()) {
                     break;
                 }
             }
@@ -160,7 +160,8 @@ std::pair<Solvers, fs::path> ChooseFileInDir(const fs::path& dir,
                 return {Solvers::qUnknown, dir_entry.path()};
             }
             Solvers solver_type = Solvers::qUnknown;
-            auto found = SolversNameTypeTable.find(parsed_line.get_args()[0]);
+            auto found =
+                SolversNameTypeTable.find(parsed_line.get_common_arg_at(0));
             if (found != SolversNameTypeTable.end())
                 solver_type = found->second;
             fin.close();
@@ -230,11 +231,10 @@ void ReadParameters(PolySolver& solver, fs::path path) noexcept
     std::string read;
     while (std::getline(fin, read)) {
         line.Load(read);
-        // std::visit(dash::overloaded{[]([[maybe_unused]] std::monostate& arg)
-        // {},
-        //                             [&line]([[maybe_unused]] auto& arg) {
-        //                                 arg.Parse(line);
-        //                             }},
-        //            solver);
+        std::visit(dash::overloaded{[]([[maybe_unused]] std::monostate& arg) {},
+                                    [&line]([[maybe_unused]] auto& arg) {
+                                        arg.ParseLine(std::move(line));
+                                    }},
+                   solver);
     }
 }

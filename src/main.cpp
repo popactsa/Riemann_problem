@@ -27,6 +27,7 @@ int main()
             break;
         }
         }
+        ReadParameters(Solver, scenario_file);
     }
     return 0;
 }

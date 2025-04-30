@@ -16,6 +16,10 @@ template <typename Solver>
 class iSolver {
 public:
     void Start() noexcept { static_cast<Solver*>(this)->Start(); }
+    void ParseLine(ScenParsingLine&& line) noexcept
+    {
+        static_cast<Solver*>(this)->ParseLine(line);
+    }
 private:
     friend Solver;
     iSolver() {};

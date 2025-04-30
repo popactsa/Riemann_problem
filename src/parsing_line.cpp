@@ -5,23 +5,12 @@
 #include <algorithm>
 #include <iterator>
 
-ScenParsingLine::VariableType
-operator|=(ScenParsingLine::VariableType& lhs,
-           const ScenParsingLine::VariableType& rhs) noexcept
-{
-    using ut = std::underlying_type_t<ScenParsingLine::VariableType>;
-    lhs = static_cast<ScenParsingLine::VariableType>(static_cast<ut>(lhs)
-                                                     | static_cast<ut>(rhs));
-    return lhs;
-}
-
 void ScenParsingLine::Load(const std::string& line) noexcept
 {
     Reset();
-
     std::size_t pop_words = 0;
     std::vector<std::string> split = SplitString(line, ' ');
-    switch (static_cast<HeadSpecialChars>(split[0][0])) {
+    switch (static_cast<HeadSpecialChars>(split[0].front())) {
         using enum HeadSpecialChars;
     case qCommentary: {
         head_spec_char_ = qCommentary;
@@ -32,42 +21,66 @@ void ScenParsingLine::Load(const std::string& line) noexcept
         break;
     }
     default: {
-        head_spec_char_ = qNotSet;
+        head_spec_char_ = qVariable;
         break;
     }
     }
-    std::size_t offset = head_spec_char_ == HeadSpecialChars::qNotSet ? 0 : 1;
+    std::size_t offset = head_spec_char_ == HeadSpecialChars::qVariable ? 0 : 1;
     name_.resize(split[0].size() - offset);
     std::copy(split[0].cbegin() + offset, split[0].cend(), name_.begin());
     ++pop_words;
+    dash::Expect<dash::ErrorAction::qTerminating, dash::InvalidLineFormat>(
+        [&split, &pop_words]() { return split.size() >= 2; },
+        "Provide more arguments(>=2)");
 
-    try {
-        index_ = std::stoul(split[1]);
-        type_ |= VariableType::qArrayType;
-        ++pop_words;
-    } catch (const std::invalid_argument& err) {
-    } catch (const std::out_of_range& err) {
-        std::terminate();
+    if (split.size()
+        - pop_words
+        > 1
+        && head_spec_char_
+        == HeadSpecialChars::qVariable) {
+        bool is_uint = dash::IsUnsignedInt(split[1]);
+        if (is_uint) {
+            index_ = std::stoul(split[1]);
+            type_ |= dash::Flag{VariableType::qArrayType};
+            ++pop_words;
+        }
     }
 
-    switch (static_cast<TypeSpecialChars>(split[pop_words][0])) {
-        using enum TypeSpecialChars;
-    case qCompoundType: {
-        type_ |= VariableType::qCompoundType;
-        ++pop_words;
-        break;
-    }
-    default: {
-        break;
-    }
+    if (head_spec_char_ == HeadSpecialChars::qVariable) {
+        switch (static_cast<TypeSpecialChars>(split[pop_words].front())) {
+            using enum TypeSpecialChars;
+        case qNamedType: {
+            type_ |= dash::Flag{VariableType::qNamedType};
+            ++pop_words;
+            break;
+        }
+        default: {
+            type_ |= dash::Flag{VariableType::qCommonType};
+            break;
+        }
+        }
+    } else {
+        type_ |= dash::Flag{VariableType::qCommonType};
     }
 
     dash::Expect<dash::ErrorAction::qTerminating, dash::InvalidLineFormat>(
         [&split, &pop_words]() { return split.size() > pop_words; },
         "No arguments to variable passed");
 
-    if (split.size() <= pop_words)
-        args_.reserve(split.size() - pop_words);
-    std::copy(split.cbegin() + pop_words, split.cend(),
-              std::back_inserter(args_));
+    if (type_ & dash::Flag{VariableType::qNamedType}) {
+        dash::Expect<dash::ErrorAction::qTerminating, dash::InvalidLineFormat>(
+            [&split, &pop_words]() {
+                return (split.size() - pop_words) % 2 == 0;
+            },
+            "Not all names are paired with values");
+        args_ = std::vector<NamedArg>();
+        for (std::size_t i = pop_words; i < split.size(); i += 2) {
+            std::get<std::vector<NamedArg>>(args_).push_back(
+                {split[i], split[i + 1]});
+        }
+    } else if (type_ & dash::Flag{VariableType::qCommonType}) {
+        args_ = std::vector<std::string>();
+        auto it = std::back_inserter(std::get<std::vector<std::string>>(args_));
+        std::copy(split.cbegin() + pop_words, split.cend(), it);
+    }
 }

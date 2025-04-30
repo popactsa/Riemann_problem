@@ -28,6 +28,7 @@ public:
                      Parser<std::array<Wall<Solver_Lagrange_1D>, 2>>>;
 
     void Start() noexcept;
+    void ParseLine(ScenParsingLine&& line) noexcept;
     Solver_Lagrange_1D() = default;
 private:
     std::size_t nx;

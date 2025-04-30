@@ -11,10 +11,10 @@ namespace dash {
 class ParametersException : public std::exception {
     // A common class for exceptions thrown when checking parameters validity
 protected:
-    std::string what_message;
+    std::string what_arg;
 public:
-    explicit ParametersException(const std::string& msg) : what_message(msg) {}
-    const char* what() const noexcept override { return what_message.c_str(); }
+    explicit ParametersException(const std::string& msg) : what_arg(msg) {}
+    const char* what() const noexcept override { return what_arg.c_str(); }
 };
 class InvalidParameterValue : public ParametersException {
 public:
@@ -27,10 +27,10 @@ public:
 class ParserException : public std::exception {
     // A common class for exceptions thrown when parsing a file
 protected:
-    std::string what_message;
+    std::string what_arg;
 public:
-    explicit ParserException(const std::string& msg) : what_message(msg) {}
-    const char* what() const noexcept override { return what_message.c_str(); }
+    explicit ParserException(const std::string& msg) : what_arg(msg) {}
+    const char* what() const noexcept override { return what_arg.c_str(); }
 };
 class MultipleReadDefinitions : public ParserException {
 public:
@@ -49,6 +49,13 @@ public:
     explicit InvalidLineFormat(const std::string& msg) : ParserException(msg) {}
 };
 
+class IncorrectArgAccess : public ParserException {
+public:
+    explicit IncorrectArgAccess(const std::string& msg) : ParserException(msg)
+    {
+    }
+};
+
 enum class ErrorAction { qIgnore, qThrowing, qTerminating, qLogging };
 
 constexpr ErrorAction qDefaultErrorAction = ErrorAction::qThrowing;
@@ -60,7 +67,11 @@ constexpr void Expect(const C cond, const std::string& msg)
 {
     if constexpr (action == ErrorAction::qThrowing)
         if (!cond()) {
-            throw exc(msg);
+            if constexpr (std::is_constructible_v<exc, const std::string&>) {
+                throw exc(msg);
+            } else {
+                throw exc();
+            }
         }
     if constexpr (action == ErrorAction::qTerminating)
         if (!cond()) {

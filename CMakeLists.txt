@@ -26,7 +26,8 @@ set(SOURCES
 
 HEADER_DIRECTORIES(header_dir_list)
 list(LENGTH header_dir_list header_dir_list_count)
-message(STATUS "[INFO] Found ${header_dir_list_count} header directories")
+execute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --blue --bold
+    "[INFO] Found ${header_dir_list_count} headers")
 add_executable(${PROJECT_NAME} ${SOURCES})
 target_include_directories(
     ${PROJECT_NAME}

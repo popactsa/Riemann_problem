@@ -80,6 +80,11 @@ void ScenParsingLine::Load(const std::string& line) noexcept
         }
     } else if (type_ & dash::Flag{VariableType::qCommonType}) {
         args_ = std::vector<std::string>();
+        std::size_t args_size = split.size() - pop_words;
+        if (args_size > 1) {
+            type_ |= dash::Flag{VariableType::qArrayType};
+        }
+        std::get<std::vector<std::string>>(args_).reserve(args_size);
         auto it = std::back_inserter(std::get<std::vector<std::string>>(args_));
         std::copy(split.cbegin() + pop_words, split.cend(), it);
     }

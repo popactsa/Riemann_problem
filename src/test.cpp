@@ -1,19 +1,16 @@
 #include "auxiliary_functions.h"
+#include "parsing_line.h"
 #include <cstdint>
 #include <iostream>
-
-enum class colors : std::uint8_t {
-    red = 1 << 0,
-    blue = 1 << 1,
-    green = 1 << 2
-};
+#include <string>
+#include <vector>
 
 int main()
 {
-    dash::Flag flag1{colors::red};
-    flag1.reset();
-    dash::Flag flag2{colors::red};
-    std::cout << (flag1 & flag2).any() << std::endl;
-
+    std::vector<std::string> data{"Wall 1.0 2.0 3.0"};
+    ScenParsingLine parsed;
+    for (auto& it : data) {
+        parsed.Load(it);
+    }
     return 0;
 }

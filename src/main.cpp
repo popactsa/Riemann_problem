@@ -4,18 +4,19 @@
 
 #include "Solver_Lagrange_1D.h"
 #include "error_handling.h"
+#include "iSolver.h"
 #include "io.h"
 
 struct winsize w;
 int main()
 {
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    PolySolver Solver{std::monostate()};
     if (IsReadable(qScenDir)) {
         std::cout << "Choose scenario from " << qScenDir << " : " << std::endl;
         std::size_t n_items = PrintFilenames(qScenDir, qPostfix);
         auto [scenario_solver_type, scenario_file] =
             ChooseFileInDir(qScenDir, 0, n_items, qPostfix);
-        PolySolver Solver;
         switch (scenario_solver_type) {
             using enum Solvers;
         case qLagrange1D: {
@@ -27,7 +28,14 @@ int main()
             break;
         }
         }
-        ReadParameters(Solver, scenario_file);
+        std::visit(dash::overloaded{[]([[maybe_unused]] std::monostate& arg) {
+                                        // this can't be reached
+                                    },
+                                    [&scenario_file](auto& arg) {
+                                        arg.ReadParameters(scenario_file);
+                                    }},
+                   Solver);
+        std::get<Solver_Lagrange_1D>(Solver).print();
     }
     return 0;
 }

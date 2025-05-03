@@ -13,15 +13,25 @@ macro(HEADER_DIRECTORIES return_list)
     set(${return_list} ${dir_list})
 endmacro()
 
+# set(CMAKE_OBJECT_PATH_DIR "${CMAKE_BINARY_DIR}/object_files")
+# set(CMAKE_CLEAN_NO_CUSTOM 1)
+# set(CMAKE_KEEP_TEMP_FILES ON)
+# # set(CMAKE_VERBOSE_MAKEFILE ON)
+# file(MAKE_DIRECTORY ${CMAKE_OBJECT_PATH_DIR})
+#
+# set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_OBJECT_PATH_DIR})
+# set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_OBJECT_PATH_DIR})
+# set(CMAKE_OBJECT_OUTPUT_DIRECTORY ${CMAKE_OBJECT_PATH_DIR})
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -Wall -Wextra -Werror -pedantic -std=c++20")
 
 set(SOURCES
-    src/main.cpp
-    src/io.cpp
-    src/parsing_line.cpp
-    src/Solver_Lagrange_1D.cpp
-    # src/test.cpp
+    # src/main.cpp
+    # src/io.cpp
+    # src/parsing_line.cpp
+    # src/Solver_Lagrange_1D.cpp
+    src/test.cpp
 )
 
 HEADER_DIRECTORIES(header_dir_list)
@@ -34,3 +44,4 @@ target_include_directories(
     PUBLIC
     ${header_dir_list}
 )
+# set_target_properties(${PROJECT_NAME} PROPERTIES CMAKE_CXX_FLAGS "-save-temps")

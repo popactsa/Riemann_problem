@@ -65,7 +65,7 @@ public:
     {
         return name_;
     }
-    inline constexpr const std::string& get_common_arg_at(std::size_t i) const
+    constexpr const std::string& get_common_arg_at(std::size_t i) const
     {
         dash::Expect<dash::ErrorAction::qThrowing, std::bad_variant_access>(
             [this]() {
@@ -74,7 +74,7 @@ public:
             "Trying to access common argument");
         return std::get<std::vector<std::string>>(args_).at(i);
     }
-    inline constexpr const std::vector<std::string>& get_common_args() const
+    constexpr const std::vector<std::string>& get_common_args() const
     {
         dash::Expect<dash::ErrorAction::qThrowing, std::bad_variant_access>(
             [this]() {
@@ -83,7 +83,7 @@ public:
             "Trying to access common argument");
         return std::get<std::vector<std::string>>(args_);
     }
-    inline constexpr const NamedArg& get_named_arg_at(std::size_t i) const
+    constexpr const NamedArg& get_named_arg_at(std::size_t i) const
     {
         dash::Expect<dash::ErrorAction::qTerminating, std::bad_variant_access>(
             [this]() {
@@ -92,7 +92,7 @@ public:
             "Trying to access named argument");
         return std::get<std::vector<NamedArg>>(args_).at(i);
     }
-    inline constexpr const std::vector<NamedArg>& get_named_args() const
+    constexpr const std::vector<NamedArg>& get_named_args() const
     {
         dash::Expect<dash::ErrorAction::qThrowing, std::bad_variant_access>(
             [this]() {
@@ -110,6 +110,7 @@ public:
         index_ = -1;
         std::visit([](auto& arg) { arg.clear(); }, args_);
     }
+    ~ScenParsingLine() = default;
 private:
     HeadSpecialChars head_spec_char_;
     dash::Flag<VariableType> type_;

@@ -2,6 +2,8 @@
 #define ISOLVER_H
 
 #include "parsing_line.h"
+#include <filesystem>
+#include <fstream>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
@@ -16,9 +18,25 @@ template <typename Solver>
 class iSolver {
 public:
     void Start() noexcept { static_cast<Solver*>(this)->Start(); }
-    void ParseLine(ScenParsingLine&& line) noexcept
+    void ParseLine(const ScenParsingLine& line) noexcept
     {
         static_cast<Solver*>(this)->ParseLine(line);
+    }
+    void ReadParameters(const std::filesystem::path& path) noexcept
+    {
+        std::ifstream fin(path);
+        dash::Expect<dash::ErrorAction::qTerminating, std::exception>(
+            [&fin]() { return fin.is_open(); }, "Can't open a file");
+        ScenParsingLine line;
+        std::string read;
+        while (std::getline(fin, read)) {
+            line.Load(read);
+            if (line.get_head_spec_char()
+                == ScenParsingLine::HeadSpecialChars::qCommentary) {
+                continue;
+            }
+            ParseLine(line);
+        }
     }
 private:
     friend Solver;

@@ -7,7 +7,6 @@
 #include <sys/ioctl.h>
 #include <unordered_map>
 
-#include "Solver_Lagrange_1D.h"
 #include "error_handling.h"
 #include "iSolver.h"
 #include "parsing_line.h"
@@ -216,25 +215,4 @@ std::size_t PrintFilenames(const fs::path& dir,
         }
     }
     return cnt;
-}
-
-void ReadParameters(PolySolver& solver, fs::path path) noexcept
-{
-    dash::Expect<dash::ErrorAction::qTerminating, std::exception>(
-        [&solver]() { return !std::holds_alternative<std::monostate>(solver); },
-        "Incorrect solver type provided");
-    std::ifstream fin(path);
-    dash::Expect<dash::ErrorAction::qTerminating, std::exception>(
-        [&fin]() { return fin.is_open(); }, "Can't open a file");
-    ScenParsingLine line;
-    ScenParsingLine parent_line;
-    std::string read;
-    while (std::getline(fin, read)) {
-        line.Load(read);
-        std::visit(dash::overloaded{[]([[maybe_unused]] std::monostate& arg) {},
-                                    [&line]([[maybe_unused]] auto& arg) {
-                                        arg.ParseLine(std::move(line));
-                                    }},
-                   solver);
-    }
 }

@@ -27,9 +27,21 @@ public:
                      Parser<std::string>,
                      Parser<std::array<Wall<Solver_Lagrange_1D>, 2>>>;
 
-    void Start() noexcept;
-    void ParseLine(ScenParsingLine&& line) noexcept;
     Solver_Lagrange_1D() = default;
+    void Start() noexcept;
+    void ParseLine(const ScenParsingLine& line) noexcept;
+    void print()
+    {
+        std::cout
+            << nx
+            << ' '
+            << nt
+            << ' '
+            << write_file
+            << ' '
+            << CFL
+            << std::endl;
+    }
 private:
     std::size_t nx;
     std::size_t nt;
@@ -39,7 +51,6 @@ private:
     double CFL;
     double gamma;
     std::string write_file;
-    Tests test;
     std::array<Wall<Solver_Lagrange_1D>, 2> walls;
 
     dash::TinyMap<std::string_view, PolyParsers, 9> parsing_table{

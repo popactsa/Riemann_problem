@@ -6,39 +6,170 @@
 #include <array>
 #include <bitset>
 #include <climits>
+#include <cstdint>
 #include <initializer_list>
 #include <iostream>
 #include <iterator>
 #include <ranges>
 #include <stdexcept>
 #include <utility>
+#include <variant>
 
 namespace dash {
+
+/**
+ * @brief A helper struct, which performs action when destroyed
+ */
 template <typename F>
 struct FinalAction {
-    // Performs an action `act` when destructor called
-    explicit FinalAction(F f) : act(f) {}
-    ~FinalAction() { act(); }
+    explicit FinalAction(F f) noexcept : act(f) {}
+    ~FinalAction() noexcept { act(); }
     F act;
 };
 
+/**
+ * @brief A helper factory-function for FinalAction
+ *
+ * @tparam F Type of functor executed when FinalAction destroyed
+ * @param f Executed functor
+ * @return Loaded FinalAction
+ */
 template <typename F>
-[[nodiscard]] auto Finally(F f)
-// Wrapper for FinalAction
+[[nodiscard]] auto Finally(F f) noexcept
 {
     return FinalAction{f};
 }
 
+/**
+ * @brief Automatic compile-time created struct for tagging of types
+ */
+template <typename T>
+struct Type {
+    static constexpr char dummy_ = 0;
+};
+
+/**
+ * @brief Compile-time tagging for type T
+ *
+ * @tparam T Tagged type
+ */
+template <typename T>
+inline constexpr const void* qUniqueID = &Type<T>::dummy_;
+
+/**
+ * @brief Run-time tagging
+ *
+ * @tparam T Tagged type
+ * @return A tag for type T
+ */
+template <typename T>
+static std::size_t UniqueID() noexcept
+{
+    return reinterpret_cast<std::size_t>(qUniqueID<T>);
+}
+
+/**
+ * @brief Factory-functor for variants. ONLY COMPILE-TIME TYPES, idc about other
+ cases yet
+ *
+ * @tparam T Types in std::variant template
+ */
+template <typename... T>
+class VariantFactory {
+public:
+    static constexpr std::size_t qTCount = sizeof...(T);
+    static constexpr std::array<const void*, qTCount> qLookupTbl{
+        dash::qUniqueID<T>...};
+    using VariantT = std::variant<T...>;
+    using ResultT = std::optional<VariantT>;
+    template <std::size_t I>
+    using AlternativeT = std::variant_alternative_t<I, VariantT>;
+
+    /**
+     * @brief Creates a std::optional w/ std::variant. Forwards a call to
+    hidden emplace_variant func. Uses RVO
+     * @tparam Args Type of arguments for an alternative constructor
+     * @param type_idx UniqueID for alternative
+     * @param args Arguments for an alternative constructor
+     * @return Constructed std::optional
+     */
+    template <typename... Args>
+    constexpr ResultT operator()(const void* type_idx, Args&&... args) noexcept
+    {
+        return emplace_variant(type_idx, std::forward<Args>(args)...);
+    }
+private:
+    /**
+     * @brief Recursive function which lookups for a given alternative to
+     construct with passed arguments. Uses RVO
+     *
+     * @tparam Args Type of arguments for an alternative constructor
+     * @tparam I A Call counter.
+     * @param type_idx UniqueID for alternative
+     * @param args Arguments for an alternative constructor
+     * @return Constructed std::optional
+     */
+    template <std::size_t I = 0, typename... Args>
+    static constexpr ResultT emplace_variant(const void* type_idx,
+                                             Args&&... args) noexcept
+    {
+        if constexpr (I >= qTCount) {
+            return {};
+        } else {
+            if (qLookupTbl[I] == type_idx) {
+                if constexpr (std::is_constructible_v<AlternativeT<I>,
+                                                      Args...>) {
+                    return ResultT{std::in_place, std::in_place_index<I>,
+                                   std::forward<Args>(args)...};
+                } else {
+                    return {};
+                }
+            } else {
+                return emplace_variant<I + 1>(type_idx,
+                                              std::forward<Args>(args)...);
+            }
+        }
+    }
+};
+
+/**
+ * @brief Wrapper for a std::variant with given types T
+ */
+template <typename... T>
+struct VariantWrapper {
+    using UsedFactory = VariantFactory<T...>;
+    template <typename... Args>
+    constexpr VariantWrapper(const void* type_idx, Args&&... args) :
+        stored(UsedFactory{}(type_idx, std::forward<Args>(args)...))
+    {
+    }
+    UsedFactory::ResultT stored;
+};
+
+/**
+ * @brief Compile-time map with linear search. If used with std::string as a key
+ shows a better performance(at least with a reasonable amount of buckets) than
+ std::unordered_map/std::map because of linear search optimizations(separates
+ all keys into groups with their lengths thus eliminating unnecessary
+ comparisons). Can be used with types with no-default constructors. Can be
+ constructed with automaticaly deduced size
+ */
 template <typename T1, typename T2, std::size_t Size>
 struct TinyMap {
-    constexpr TinyMap(std::initializer_list<std::pair<T1, T2>> init_list)
+    template <typename... Args>
+    // requires std::conjunction_v<
+    //     std::is_convertible<Args, std::pair<T1, T2>>...>
+    constexpr TinyMap(Args&&... init_list) :
+        values_{std::forward<Args>(init_list)...}
     {
-        if (init_list.size() != Size) {
-            throw std::range_error("Initializer list has incorrect size");
-        }
-        std::copy(init_list.begin(), init_list.end(), values_.begin());
     }
-    [[nodiscard]] constexpr T2& at(const T1& key) const
+    /**
+     * @brief Safely accesses stored values by key
+     *
+     * @param key A key for a table
+     * @return A value if found, otherwise throws an exception
+     */
+    [[nodiscard]] constexpr const T2& at(const T1& key) const
     {
         const auto found =
             std::find_if(values_.cbegin(), values_.cend(),
@@ -47,6 +178,12 @@ struct TinyMap {
             [&found, this] { return found != values_.cend(); }, "No such key");
         return found->second;
     }
+    /**
+     * @brief Accesses stored values by key
+     *
+     * @param key A key for a table
+     * @return A value if found, otherwise throws an exception
+     */
     [[nodiscard]] constexpr T2& at(const T1& key)
     {
         const auto found =
@@ -59,12 +196,22 @@ struct TinyMap {
     std::array<std::pair<T1, T2>, Size> values_;
 };
 
-template <typename T>
-class ConstexprBitsetFromT {
+template <typename T1, typename T2, typename... Args>
+// requires std::conjunction_v<std::is_convertible<Args, std::pair<T1, T2>>...>
+TinyMap(std::pair<T1, T2>, Args&&...) -> TinyMap<T1, T2, 1 + sizeof...(Args)>;
+
+/**
+ * @brief A compile-time constructed from a enum(idc about other cases)
+ bitset(since std::bitset is not compile-time constructible in c++20(but it is
+ in c++23)).
+ */
+template <typename E>
+    requires(std::is_enum_v<E>)
+class ConstexprBitsetFromE {
 public:
     using UT =
-        typename std::make_unsigned_t<typename std::underlying_type_t<T>>;
-    constexpr ConstexprBitsetFromT(T init) noexcept
+        typename std::make_unsigned_t<typename std::underlying_type_t<E>>;
+    constexpr ConstexprBitsetFromE(E init) noexcept
     {
         std::ranges::generate(bits_ | std::views::reverse,
                               [init_bits = static_cast<UT>(init)]() mutable {
@@ -73,17 +220,17 @@ public:
                                   return bit;
                               });
     }
-    constexpr ConstexprBitsetFromT() = default;
-    constexpr ConstexprBitsetFromT(const ConstexprBitsetFromT&) = default;
-    constexpr ConstexprBitsetFromT&
-    operator=(const ConstexprBitsetFromT&) = default;
+    constexpr ConstexprBitsetFromE() = default;
+    constexpr ConstexprBitsetFromE(const ConstexprBitsetFromE&) = default;
+    constexpr ConstexprBitsetFromE&
+    operator=(const ConstexprBitsetFromE&) = default;
 
     constexpr void reset() noexcept
     {
         std::ranges::generate(bits_, []() { return false; });
     }
-    constexpr ConstexprBitsetFromT&
-    operator|=(const ConstexprBitsetFromT& rhs) noexcept
+    constexpr ConstexprBitsetFromE&
+    operator|=(const ConstexprBitsetFromE& rhs) noexcept
     {
         for (std::size_t i = 0; i < bits_.size(); ++i) {
             bits_[i] |= rhs.bits_[i];
@@ -91,15 +238,15 @@ public:
         return *this;
     }
     [[nodiscard]]
-    constexpr ConstexprBitsetFromT
-    operator|(const ConstexprBitsetFromT& rhs) const noexcept
+    constexpr ConstexprBitsetFromE
+    operator|(const ConstexprBitsetFromE& rhs) const noexcept
     {
         auto result = *this;
         result |= rhs;
         return result;
     }
-    constexpr ConstexprBitsetFromT&
-    operator&=(const ConstexprBitsetFromT& rhs) noexcept
+    constexpr ConstexprBitsetFromE&
+    operator&=(const ConstexprBitsetFromE& rhs) noexcept
     {
         for (std::size_t i = 0; i < bits_.size(); ++i) {
             bits_[i] &= rhs.bits_[i];
@@ -107,20 +254,20 @@ public:
         return *this;
     }
     [[nodiscard]]
-    constexpr ConstexprBitsetFromT
-    operator&(const ConstexprBitsetFromT& rhs) const noexcept
+    constexpr ConstexprBitsetFromE
+    operator&(const ConstexprBitsetFromE& rhs) const noexcept
     {
         auto result = *this;
         result &= rhs;
         return result;
     }
     [[nodiscard]]
-    constexpr bool operator==(const ConstexprBitsetFromT& rhs) const noexcept
+    constexpr bool operator==(const ConstexprBitsetFromE& rhs) const noexcept
     {
         return bits_ == rhs.bits_;
     }
     [[nodiscard]]
-    constexpr bool operator!=(const ConstexprBitsetFromT& rhs) const noexcept
+    constexpr bool operator!=(const ConstexprBitsetFromE& rhs) const noexcept
     {
         return !(*this == rhs);
     }
@@ -135,9 +282,13 @@ public:
         return any();
     }
 private:
-    std::array<bool, sizeof(T) * CHAR_BIT> bits_;
+    std::array<bool, sizeof(E) * CHAR_BIT> bits_;
 };
 
+/**
+ * @brief A class for flags based on enums. Provides support for binary
+ operations.
+ */
 template <typename E>
     requires std::is_enum_v<E>
 class Flag {
@@ -195,9 +346,16 @@ public:
         return any();
     }
 private:
-    ConstexprBitsetFromT<E> bits_;
+    ConstexprBitsetFromE<E> bits_;
 };
 
+/**
+ * @brief A helper function to check if given std::string_view is an unsigned
+ int explicit representation
+ *
+ * @param str Checked std::string_view
+ * @return Is it?
+ */
 inline bool IsUnsignedInt(std::string_view str)
 {
     static auto isDigit = [](auto c) {

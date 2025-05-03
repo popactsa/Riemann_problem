@@ -58,6 +58,4 @@ std::pair<Solvers, fs::path> ChooseFileInDir(const fs::path& dir,
 // @returns : A path to a chosen file with name containing `postfix` and `pos`
 // in `dir`
 
-void ReadParameters(PolySolver& solver, fs::path path) noexcept;
-
 #endif // IO_H

@@ -2,7 +2,7 @@
 
 void Solver_Lagrange_1D::Start() noexcept {}
 
-void Solver_Lagrange_1D::ParseLine(ScenParsingLine&& line) noexcept
+void Solver_Lagrange_1D::ParseLine(const ScenParsingLine& line) noexcept
 {
     try {
         auto found = parsing_table.at(line.get_name());

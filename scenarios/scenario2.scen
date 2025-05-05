@@ -11,4 +11,6 @@ nt_write 1
 CFL 0.5
 gamma 1.4
 InitCond test2
+is_conservative true
+viscosity Neuman
 write_file samplesample.csv

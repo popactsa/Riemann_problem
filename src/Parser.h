@@ -65,7 +65,7 @@ public:
                            & dash::Flag{
                                ScenParsingLine::VariableType::qCommonType};
                 },
-                "Parsed line is not of qArrayType");
+                "Parsed line is not of qCommonType");
             auto& args = line.get_common_args();
             std::size_t i = 0;
             for (const auto& it : args) {
@@ -81,7 +81,7 @@ public:
                            & dash::Flag{
                                ScenParsingLine::VariableType::qNamedType};
                 },
-                "Parsed line is not of qArrayType");
+                "Parsed line is not of qNamedType");
             auto& args = line.get_named_args();
             for (const auto& it : args) {
                 Parser<elementT>(target_->data() + index).Parse(it);
@@ -155,6 +155,27 @@ public:
     void Parse(std::string_view str) { *target_ = str; }
 private:
     std::string* target_;
+};
+
+template <>
+class Parser<bool>
+    : ParserTypeLabel<ScenParsingLine::VariableType::qCommonType> {
+public:
+    constexpr Parser(bool* target) noexcept : target_(target) {}
+    void Parse(const ScenParsingLine& line, const std::size_t pos = 0)
+    {
+        Parse(line.get_common_arg_at(pos));
+    }
+    void Parse(std::string_view str)
+    {
+        if (str.compare("true") || str.compare("1")) {
+            *target_ = true;
+        } else if (str.compare("false") || str.compare("0")) {
+            *target_ = false;
+        }
+    }
+private:
+    bool* target_;
 };
 
 #endif // PARSER_H

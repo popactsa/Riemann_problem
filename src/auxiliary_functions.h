@@ -114,6 +114,7 @@ private:
                                              Args&&... args) noexcept
     {
         if constexpr (I >= qTCount) {
+            std::cerr << "I >= qTCount" << std::endl;
             return {};
         } else {
             if (qLookupTbl[I] == type_idx) {
@@ -122,6 +123,9 @@ private:
                     return ResultT(std::in_place, std::in_place_index<I>,
                                    std::forward<Args>(args)...);
                 } else {
+                    std::cerr
+                        << "Can't construct a variant in VariantFactory"
+                        << std::endl;
                     return {};
                 }
             } else {

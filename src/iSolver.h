@@ -18,12 +18,19 @@ template <typename Solver>
 class InitCond {};
 
 template <typename Solver>
+class Viscosity {};
+
+template <typename Solver>
 class iSolver {
 public:
-    void Start() noexcept { static_cast<Solver*>(this)->Start(); }
+    void Start() noexcept { static_cast<Solver*>(this)->Start_impl(); }
     void ParseLine(const ScenParsingLine& line) noexcept
     {
-        static_cast<Solver*>(this)->ParseLine(line);
+        static_cast<Solver*>(this)->ParseLine_impl(line);
+    }
+    void InitializeDependent() noexcept
+    {
+        static_cast<Solver*>(this)->InitializeDependent_impl();
     }
     void ReadParameters(const std::filesystem::path& path) noexcept
     {
@@ -40,19 +47,12 @@ public:
             }
             ParseLine(line);
         }
+        InitializeDependent();
     }
 private:
     friend Solver;
     iSolver() {};
 };
-
-// template <typename T>
-//     requires dash::IsCRTPBaseOf_v<iSolver, T>
-// struct SolverType : dash::Type<T> {};
-//
-// template <typename T>
-//     requires dash::IsCRTPBaseOf_v<iSolver, T>
-// inline constexpr const void* qSolverUniqueID = &SolverType<T>::dummy_;
 
 class Solver_Lagrange_1D;
 using PolySolver = dash::VariantWrapper<Solver_Lagrange_1D>;

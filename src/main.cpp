@@ -33,7 +33,6 @@ int main()
                            arg.ReadParameters(scenario_file);
                        }},
                        *Solver.stored);
-            std::get<Solver_Lagrange_1D>(*Solver.stored).print();
         }
     }
     return 0;

@@ -48,7 +48,7 @@ template <template <class...> class U, class... Vs>
 inline constexpr bool is_instance_of_v<U<Vs...>, U> = std::true_type{};
 
 template <class T, template <class...> class U>
-concept IsInstanceOfV = is_instance_of_v<T, U>;
+concept IsInstanceOf_v = is_instance_of_v<T, U>;
 
 // Convenient structs
 template <class T>
@@ -66,10 +66,10 @@ struct IsCRTPBaseOf
     : std::is_base_of<RemoveCVRefT<CRTP_Base<RemoveCVRefT<CRTP_Derived>>>,
                       RemoveCVRefT<CRTP_Derived>> {};
 template <template <typename T> class CRTP_Base, class CRTP_Derived>
-concept IsCRTPBaseOfValue = IsCRTPBaseOf<CRTP_Base, CRTP_Derived>::value;
+concept IsCRTPBaseOf_v = IsCRTPBaseOf<CRTP_Base, CRTP_Derived>::value;
 
 template <class T, class U>
-concept IsBaseOfValue = IsBaseOf<T, U>::value;
+concept IsBaseOf_v = IsBaseOf<T, U>::value;
 
 // Hash-function to allow heterogenious search with std::string_view
 // in unordered containers

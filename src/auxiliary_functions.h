@@ -119,8 +119,8 @@ private:
             if (qLookupTbl[I] == type_idx) {
                 if constexpr (std::is_constructible_v<AlternativeT<I>,
                                                       Args...>) {
-                    return ResultT{std::in_place, std::in_place_index<I>,
-                                   std::forward<Args>(args)...};
+                    return ResultT(std::in_place, std::in_place_index<I>,
+                                   std::forward<Args>(args)...);
                 } else {
                     return {};
                 }
@@ -138,10 +138,21 @@ private:
 template <typename... T>
 struct VariantWrapper {
     using UsedFactory = VariantFactory<T...>;
+    constexpr VariantWrapper() = default;
     template <typename... Args>
-    constexpr VariantWrapper(const void* type_idx, Args&&... args) :
+    constexpr VariantWrapper(const void* type_idx, Args&&... args) noexcept :
         stored(UsedFactory{}(type_idx, std::forward<Args>(args)...))
     {
+    }
+    template <typename... Args>
+    constexpr void emplace(const void* type_idx, Args&&... args) noexcept
+    {
+        stored = UsedFactory{}(type_idx, std::forward<Args>(args)...);
+    }
+    template <typename T_alt, typename... Args>
+    constexpr void emplace(Args&&... args) noexcept
+    {
+        stored.emplace(std::in_place_type<T_alt>, std::forward<Args>(args)...);
     }
     UsedFactory::ResultT stored;
 };
@@ -151,18 +162,14 @@ struct VariantWrapper {
  shows a better performance(at least with a reasonable amount of buckets) than
  std::unordered_map/std::map because of linear search optimizations(separates
  all keys into groups with their lengths thus eliminating unnecessary
- comparisons). Can be used with types with no-default constructors. Can be
- constructed with automaticaly deduced size
+ comparisons).
+    Can be used with types with no-default constructors.
+    Can be constructed with automaticaly deduced size
+    Relies on aggregate initialization
  */
+
 template <typename T1, typename T2, std::size_t Size>
 struct TinyMap {
-    template <typename... Args>
-    // requires std::conjunction_v<
-    //     std::is_convertible<Args, std::pair<T1, T2>>...>
-    constexpr TinyMap(Args&&... init_list) :
-        values_{std::forward<Args>(init_list)...}
-    {
-    }
     /**
      * @brief Safely accesses stored values by key
      *
@@ -195,10 +202,6 @@ struct TinyMap {
     }
     std::array<std::pair<T1, T2>, Size> values_;
 };
-
-template <typename T1, typename T2, typename... Args>
-// requires std::conjunction_v<std::is_convertible<Args, std::pair<T1, T2>>...>
-TinyMap(std::pair<T1, T2>, Args&&...) -> TinyMap<T1, T2, 1 + sizeof...(Args)>;
 
 /**
  * @brief A compile-time constructed from a enum(idc about other cases)

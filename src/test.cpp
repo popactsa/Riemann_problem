@@ -18,10 +18,9 @@ struct Object_double {
 
 int main()
 {
-    using Object = dash::VariantWrapper<Object_int, Object_double>;
-    dash::TinyMap map{
-        std::pair{"int", Object{dash::qUniqueID<Object_int>, 5}},
-        std::pair{"double", Object{dash::qUniqueID<Object_double>, 5.0}},
-    };
+    // using Object = dash::VariantWrapper<Object_int, Object_double>;
+    dash::TinyMap<std::string, int, 2> map;
+    map.construct_at(0, "int", 5);
+    std::cout << map.at("int");
     return 0;
 }

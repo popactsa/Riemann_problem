@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <variant>
 
-enum class Solvers { qUnknown, qLagrange1D, qWENO3_1D, qGodunov1D };
+enum class Solvers { qUnknown, qLagrange1D };
 
 template <typename Solver>
 class Wall : std::false_type {};
@@ -43,7 +43,15 @@ private:
     iSolver() {};
 };
 
+template <typename T>
+    requires dash::IsCRTPBaseOf_v<iSolver, T>
+struct SolverType : dash::Type<T> {};
+
+template <typename T>
+    requires dash::IsCRTPBaseOf_v<iSolver, T>
+inline constexpr const void* qSolverUniqueID = &SolverType<T>::dummy_;
+
 class Solver_Lagrange_1D;
-using PolySolver = std::variant<std::monostate, Solver_Lagrange_1D>;
+using PolySolver = dash::VariantWrapper<Solver_Lagrange_1D>;
 
 #endif // ISOLVER_H

@@ -9,10 +9,13 @@
 #include <type_traits>
 #include <variant>
 
+template <ScenParsingLine::VariableType F>
+struct ParserTypeLabel {
+    static constexpr dash::Flag qParsedVariableType{F};
+};
+
 template <typename T>
-class Parser {
-    // Common `Parser` for all types which have `parsing_table`
-    // TODO : Add constrains
+class Parser : ParserTypeLabel<ScenParsingLine::VariableType::qNamedType> {
 public:
     constexpr static auto qParsedVariableType =
         dash::Flag{ScenParsingLine::VariableType::qNamedType};
@@ -20,25 +23,20 @@ public:
     void Parse(const ScenParsingLine::NamedArg& named_arg)
     {
         auto& found_ptr = target_->parsing_table.at(named_arg.name_);
-        std::visit(dash::overloaded{[]([[maybe_unused]] std::monostate& arg) {
-                                        std::terminate();
-                                    },
-                                    [named_arg](auto& arg) {
-                                        arg.Parse(named_arg.value_);
-                                    }},
-                   found_ptr);
+        if (found_ptr.stored) {
+            std::visit(dash::overloaded{[named_arg](auto& arg) {
+                           arg.Parse(named_arg.value_);
+                       }},
+                       *found_ptr.stored);
+        }
     }
 private:
     T* target_;
 };
 
-// Excessive data in `line.args_` is ignored, no warning emitted
-// Range check of `line.args_` is performed(access through `at`)
-
 template <typename T>
     requires dash::Container<T>
-// Only contigious containers
-class Parser<T> {
+class Parser<T> : ParserTypeLabel<ScenParsingLine::VariableType::qArrayType> {
 public:
     constexpr Parser(T* target) noexcept : target_(target) {}
     void Parse(const ScenParsingLine& line,
@@ -53,7 +51,7 @@ public:
             "Parsed line is not of qArrayType");
         auto index = line.get_index();
         dash::Expect<dash::ErrorAction::qTerminating, std::range_error>(
-            [&index, this]() { return target_->size() < index; },
+            [&index, this]() { return index < target_->size(); },
             "Incorrect array element index read");
         // Iterating through items
         using elementT = T::value_type;
@@ -85,9 +83,8 @@ public:
                 },
                 "Parsed line is not of qArrayType");
             auto& args = line.get_named_args();
-            std::size_t i = 0;
             for (const auto& it : args) {
-                Parser<elementT>(target_->data() + i++).Parse(it);
+                Parser<elementT>(target_->data() + index).Parse(it);
             }
         }
     }
@@ -96,10 +93,9 @@ private:
 };
 
 template <>
-class Parser<int> {
+class Parser<int>
+    : ParserTypeLabel<ScenParsingLine::VariableType::qCommonType> {
 public:
-    constexpr static auto qParsedVariableType =
-        dash::Flag{ScenParsingLine::VariableType::qCommonType};
     constexpr Parser(int* target) noexcept : target_(target) {}
     void Parse(const ScenParsingLine& line, const std::size_t pos = 0)
     {
@@ -114,10 +110,9 @@ private:
 };
 
 template <>
-class Parser<std::size_t> {
+class Parser<std::size_t>
+    : ParserTypeLabel<ScenParsingLine::VariableType::qCommonType> {
 public:
-    constexpr static auto qParsedVariableType =
-        dash::Flag{ScenParsingLine::VariableType::qCommonType};
     constexpr Parser(std::size_t* target) noexcept : target_(target) {}
     void Parse(const ScenParsingLine& line, const std::size_t pos = 0)
     {
@@ -132,10 +127,9 @@ private:
 };
 
 template <>
-class Parser<double> {
+class Parser<double>
+    : ParserTypeLabel<ScenParsingLine::VariableType::qCommonType> {
 public:
-    constexpr static auto qParsedVariableType =
-        dash::Flag{ScenParsingLine::VariableType::qCommonType};
     constexpr Parser(double* target) noexcept : target_(target) {}
     void Parse(const ScenParsingLine& line, const std::size_t pos = 0)
     {
@@ -145,15 +139,14 @@ public:
     {
         std::from_chars(str_value.cbegin(), str_value.cend(), *target_);
     }
-private:
+    // private:
     double* target_;
 };
 
 template <>
-class Parser<std::string> {
+class Parser<std::string>
+    : ParserTypeLabel<ScenParsingLine::VariableType::qCommonType> {
 public:
-    constexpr static auto qParsedVariableType =
-        dash::Flag{ScenParsingLine::VariableType::qCommonType};
     constexpr Parser(std::string* target) noexcept : target_(target) {}
     void Parse(const ScenParsingLine& line, const std::size_t pos = 0)
     {

@@ -6,11 +6,12 @@ void Solver_Lagrange_1D::ParseLine(const ScenParsingLine& line) noexcept
 {
     try {
         auto found = parsing_table.at(line.get_name());
-        std::visit(dash::overloaded{[]([[maybe_unused]] std::monostate& arg) {},
-                                    [&line](auto& arg) {
-                                        arg.Parse(line);
-                                    }},
-                   found);
+        if (found.stored) {
+            std::visit(dash::overloaded{[&line](auto& arg) {
+                           arg.Parse(line);
+                       }},
+                       *found.stored);
+        }
     } catch (const std::range_error& exc) {
         // Skipping qCommentary and others..
     }

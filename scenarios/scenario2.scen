@@ -2,8 +2,12 @@
 #delimiter can be set up at Parameters(std::ifstream&) constructor
 #first line is always a solver type name
 !SolverType Lagrange1D
+walls 0 : v 1.0 P 2.0
 x_start 0.0
 x_end 1.0
 nx 100
+nt 200
+nt_write 1
 CFL 0.5
+gamma 1.4
 write_file samplesample.csv

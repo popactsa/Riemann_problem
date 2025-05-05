@@ -27,11 +27,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -Wall -Wextra -Werror -pedantic -std=c++20")
 
 set(SOURCES
-    # src/main.cpp
-    # src/io.cpp
-    # src/parsing_line.cpp
-    # src/Solver_Lagrange_1D.cpp
-    src/test.cpp
+    src/main.cpp
+    src/io.cpp
+    src/parsing_line.cpp
+    src/Solver_Lagrange_1D.cpp
+    # src/test.cpp
 )
 
 HEADER_DIRECTORIES(header_dir_list)

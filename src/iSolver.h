@@ -12,7 +12,10 @@
 enum class Solvers { qUnknown, qLagrange1D };
 
 template <typename Solver>
-class Wall : std::false_type {};
+class Wall {};
+
+template <typename Solver>
+class InitCond {};
 
 template <typename Solver>
 class iSolver {
@@ -43,13 +46,13 @@ private:
     iSolver() {};
 };
 
-template <typename T>
-    requires dash::IsCRTPBaseOf_v<iSolver, T>
-struct SolverType : dash::Type<T> {};
-
-template <typename T>
-    requires dash::IsCRTPBaseOf_v<iSolver, T>
-inline constexpr const void* qSolverUniqueID = &SolverType<T>::dummy_;
+// template <typename T>
+//     requires dash::IsCRTPBaseOf_v<iSolver, T>
+// struct SolverType : dash::Type<T> {};
+//
+// template <typename T>
+//     requires dash::IsCRTPBaseOf_v<iSolver, T>
+// inline constexpr const void* qSolverUniqueID = &SolverType<T>::dummy_;
 
 class Solver_Lagrange_1D;
 using PolySolver = dash::VariantWrapper<Solver_Lagrange_1D>;

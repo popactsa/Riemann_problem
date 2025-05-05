@@ -10,4 +10,5 @@ nt 200
 nt_write 1
 CFL 0.5
 gamma 1.4
+InitCond test2
 write_file samplesample.csv

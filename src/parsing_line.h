@@ -1,6 +1,7 @@
 #ifndef SCEN_PARSING_LINE_H
 #define SCEN_PARSING_LINE_H
 
+#include "VariableType.h"
 #include "auxiliary_functions.h"
 #include "concepts.h"
 #include "error_handling.h"
@@ -25,13 +26,7 @@ public:
         qCommentary = '#',
         qFileInfo = '!'
     };
-    enum class VariableType : std::uint8_t {
-        qCommonType = 1 << 0,
-        qNamedType = 1 << 1,
-        qArrayType = 1 << 2
-    };
     enum class TypeSpecialChars : char { qNotSet = 0, qNamedType = ':' };
-
     struct NamedArg {
         std::string name_;
         std::string value_;

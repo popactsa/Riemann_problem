@@ -1,5 +1,19 @@
 #include "Solver_Lagrange_1D.h"
 
+void Parse(InitCond<Solver_Lagrange_1D>* target, std::string_view str_value)
+{
+    using enum InitCond<Solver_Lagrange_1D>::E;
+    *target = InitCond<Solver_Lagrange_1D>{
+        InitCond<Solver_Lagrange_1D>::parsing_table.at(str_value)};
+}
+
+void Parse(Viscosity<Solver_Lagrange_1D>* target, std::string_view str_value)
+{
+    using enum Viscosity<Solver_Lagrange_1D>::E;
+    *target = Viscosity<Solver_Lagrange_1D>{
+        Viscosity<Solver_Lagrange_1D>::parsing_table.at(str_value)};
+}
+
 void Solver_Lagrange_1D::Start_impl() noexcept {}
 
 void Solver_Lagrange_1D::ParseLine_impl(const ScenParsingLine& line) noexcept
@@ -8,7 +22,7 @@ void Solver_Lagrange_1D::ParseLine_impl(const ScenParsingLine& line) noexcept
         auto found = parsing_table.at(line.get_name());
         if (found.stored) {
             std::visit(dash::overloaded{[&line](auto& arg) {
-                           arg.Parse(line);
+                           Parse(arg, line);
                        }},
                        *found.stored);
         }

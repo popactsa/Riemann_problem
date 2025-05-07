@@ -71,6 +71,9 @@ concept IsCRTPBaseOf_v = IsCRTPBaseOf<CRTP_Base, CRTP_Derived>::value;
 template <class T, class U>
 concept IsBaseOf_v = IsBaseOf<T, U>::value;
 
+template <typename T, typename L>
+concept LabeledAs = requires(T t, L l) { l = t; };
+
 // Hash-function to allow heterogenious search with std::string_view
 // in unordered containers
 struct StringHash {

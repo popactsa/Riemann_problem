@@ -30,6 +30,7 @@ set(SOURCES
     src/main.cpp
     src/io.cpp
     src/parsing_line.cpp
+    src/Parser.cpp
     src/Solver_Lagrange_1D.cpp
     # src/test.cpp
 )

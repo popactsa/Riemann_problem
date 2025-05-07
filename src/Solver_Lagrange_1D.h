@@ -2,6 +2,7 @@
 #define SOLVER_LAGRANGE_1D_H
 
 #include "Parser.h"
+#include "VariableType.h"
 #include "auxiliary_functions.h"
 #include "iSolver.h"
 #include <cstddef>
@@ -9,49 +10,34 @@
 #include <variant>
 
 template <>
-struct Wall<Solver_Lagrange_1D> {
-    using PolyParsers = dash::VariantWrapper<Parser<double>>;
+struct Wall<Solver_Lagrange_1D> : VariableTypeTag<VariableType::qNamedType> {
+    using PolyParsers = dash::VariantWrapper<double*>;
     double P;
     double v;
-    dash::TinyMap<std::string_view, PolyParsers, 2> parsing_table{
-        {{{"P", PolyParsers{dash::qUniqueID<Parser<double>>, &P}},
-          {"v", PolyParsers{dash::qUniqueID<Parser<double>>, &v}}}}};
+    dash::TinyMap<std::string, PolyParsers, 2> parsing_table{
+        {{{"P", PolyParsers{dash::qUniqueID<double*>, &P}},
+          {"v", PolyParsers{dash::qUniqueID<double*>, &v}}}}};
 };
 
 template <>
-struct InitCond<Solver_Lagrange_1D> {
+struct InitCond<Solver_Lagrange_1D>
+    : VariableTypeTag<VariableType::qCommonType> {
     enum class E { qTest1, qTest2, qTest3, qTest4 };
     static constexpr dash::TinyMap<std::string_view, E, 4> parsing_table{
         {{{"test1", E::qTest1},
           {"test2", E::qTest2},
           {"test3", E::qTest3},
           {"test4", E::qTest4}}}};
+    InitCond() = default;
+    InitCond(E value) : value_{value} {}
     E value_;
 };
 
-template <>
-class Parser<InitCond<Solver_Lagrange_1D>>
-    : ParserTypeLabel<ScenParsingLine::VariableType::qCommonType> {
-public:
-    constexpr Parser(InitCond<Solver_Lagrange_1D>* target) noexcept :
-        target_(target)
-    {
-    }
-    void Parse(const ScenParsingLine& line, const std::size_t pos = 0)
-    {
-        Parse(line.get_common_arg_at(pos));
-    }
-    void Parse(std::string_view str_value)
-    {
-        *target_ = InitCond<Solver_Lagrange_1D>{
-            InitCond<Solver_Lagrange_1D>::parsing_table.at(str_value)};
-    }
-private:
-    InitCond<Solver_Lagrange_1D>* target_;
-};
+void Parse(InitCond<Solver_Lagrange_1D>* target, std::string_view str_value);
 
 template <>
-struct Viscosity<Solver_Lagrange_1D> {
+struct Viscosity<Solver_Lagrange_1D>
+    : VariableTypeTag<VariableType::qCommonType> {
     enum class E { qNone, qNeuman, qLatter, qLinear, qSum };
     static constexpr dash::TinyMap<std::string_view, E, 5> parsing_table{
         {{{"None", E::qNone},
@@ -59,41 +45,23 @@ struct Viscosity<Solver_Lagrange_1D> {
           {"Latter", E::qLatter},
           {"Sum", E::qSum},
           {"Linear", E::qLinear}}}};
+    Viscosity() = default;
+    Viscosity(E value) : value_{value} {}
     E value_;
 };
 
-template <>
-class Parser<Viscosity<Solver_Lagrange_1D>>
-    : ParserTypeLabel<ScenParsingLine::VariableType::qCommonType> {
-public:
-    constexpr Parser(Viscosity<Solver_Lagrange_1D>* target) noexcept :
-        target_(target)
-    {
-    }
-    void Parse(const ScenParsingLine& line, const std::size_t pos = 0)
-    {
-        Parse(line.get_common_arg_at(pos));
-    }
-    void Parse(std::string_view str_value)
-    {
-        *target_ = Viscosity<Solver_Lagrange_1D>{
-            Viscosity<Solver_Lagrange_1D>::parsing_table.at(str_value)};
-    }
-private:
-    using enum Viscosity<Solver_Lagrange_1D>::E;
-    Viscosity<Solver_Lagrange_1D>* target_;
-};
+void Parse(Viscosity<Solver_Lagrange_1D>* target, std::string_view str_value);
 
 class Solver_Lagrange_1D : public iSolver<Solver_Lagrange_1D> {
 public:
     using PolyParsers =
-        dash::VariantWrapper<Parser<double>,
-                             Parser<std::size_t>,
-                             Parser<std::string>,
-                             Parser<bool>,
-                             Parser<InitCond<Solver_Lagrange_1D>>,
-                             Parser<Viscosity<Solver_Lagrange_1D>>,
-                             Parser<std::array<Wall<Solver_Lagrange_1D>, 2>>>;
+        dash::VariantWrapper<double*,
+                             std::size_t*,
+                             std::string*,
+                             bool*,
+                             InitCond<Solver_Lagrange_1D>*,
+                             Viscosity<Solver_Lagrange_1D>*,
+                             std::array<Wall<Solver_Lagrange_1D>, 2>*>;
 
     Solver_Lagrange_1D() = default;
     void Start_impl() noexcept;
@@ -116,30 +84,29 @@ private:
         Viscosity<Solver_Lagrange_1D>::E::qNone};
     std::array<Wall<Solver_Lagrange_1D>, 2> walls;
 
-    dash::TinyMap<std::string_view, PolyParsers, 13> parsing_table{
-        {{{"x_start", PolyParsers{dash::qUniqueID<Parser<double>>, &x_start}},
-          {"nx", PolyParsers{dash::qUniqueID<Parser<std::size_t>>, &nx}},
-          {"nt", PolyParsers{dash::qUniqueID<Parser<std::size_t>>, &nt}},
+    dash::TinyMap<std::string, PolyParsers, 13> parsing_table{
+        {{{"x_start", PolyParsers{dash::qUniqueID<double*>, &x_start}},
+          {"nx", PolyParsers{dash::qUniqueID<std::size_t*>, &nx}},
+          {"nt", PolyParsers{dash::qUniqueID<std::size_t*>, &nt}},
           {"InitCond",
-           PolyParsers{dash::qUniqueID<Parser<InitCond<Solver_Lagrange_1D>>>,
+           PolyParsers{dash::qUniqueID<InitCond<Solver_Lagrange_1D>*>,
                        &IC_preset}},
-          {"gamma", PolyParsers{dash::qUniqueID<Parser<double>>, &gamma}},
-          {"mu0", PolyParsers{dash::qUniqueID<Parser<double>>, &mu0}},
+          {"gamma", PolyParsers{dash::qUniqueID<double*>, &gamma}},
+          {"mu0", PolyParsers{dash::qUniqueID<double*>, &mu0}},
           {"viscosity",
-           PolyParsers{dash::qUniqueID<Parser<Viscosity<Solver_Lagrange_1D>>>,
+           PolyParsers{dash::qUniqueID<Viscosity<Solver_Lagrange_1D>*>,
                        &viscosity}},
           {"is_conservative",
-           PolyParsers{dash::qUniqueID<Parser<bool>>, &is_conservative}},
-          {"CFL", PolyParsers{dash::qUniqueID<Parser<double>>, &CFL}},
+           PolyParsers{dash::qUniqueID<bool*>, &is_conservative}},
+          {"CFL", PolyParsers{dash::qUniqueID<double*>, &CFL}},
           {"write_file",
-           PolyParsers{dash::qUniqueID<Parser<std::string>>, &write_file}},
+           PolyParsers{dash::qUniqueID<std::string*>, &write_file}},
           {"walls",
            PolyParsers{
-               dash::qUniqueID<Parser<std::array<Wall<Solver_Lagrange_1D>, 2>>>,
+               dash::qUniqueID<std::array<Wall<Solver_Lagrange_1D>, 2>*>,
                &walls}},
-          {"nt_write",
-           PolyParsers{dash::qUniqueID<Parser<std::size_t>>, &nt_write}},
-          {"x_end", PolyParsers{dash::qUniqueID<Parser<double>>, &x_end}}}}};
+          {"nt_write", PolyParsers{dash::qUniqueID<std::size_t*>, &nt_write}},
+          {"x_end", PolyParsers{dash::qUniqueID<double*>, &x_end}}}}};
 };
 
 #endif // SOLVER_LAGRANGE_1D_H

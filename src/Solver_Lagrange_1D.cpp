@@ -17,6 +17,16 @@ void Solver_Lagrange_1D::Start_impl() noexcept
     }
     SetInitialConditions();
     {
+        namespace fs = std::filesystem;
+        std::string path = "data/";
+        path += write_dir;
+        for (auto const& dir_entry : fs::directory_iterator{path}) {
+            if (dir_entry.path().string().ends_with(".csv")) {
+                fs::remove(dir_entry.path());
+            }
+        }
+    }
+    {
         auto solve_timer = dash::SetScopedTimer("Solving");
         for (step = 1; step < nt; ++step) {
             ApplyBoundaryConditions();
@@ -278,11 +288,10 @@ void Solver_Lagrange_1D::ShowResultAtStep(
     if (*show_step > step || *show_step > nt) {
         return;
     }
-    std::string path = "data/";
-    path += write_dir;
     std::string sys_call = "python ";
+    std::string path = "data/post_Solver_Lagrange_1D.py ";
     sys_call +=
-        path + "/post.py " + path + '/' + std::to_string(*show_step) + ".csv";
+        path + "data/" + write_dir + '/' + std::to_string(*show_step) + ".csv";
     // std::cout << sys_call << std::endl;
     std::system(sys_call.c_str());
 }

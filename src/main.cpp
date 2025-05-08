@@ -32,6 +32,7 @@ int main()
             std::visit(dash::overloaded{[&scenario_file](auto& arg) {
                            arg.ReadParameters(scenario_file);
                            arg.Start();
+                           // {} - stands for 'the last step'
                            arg.ShowResultAtStep({});
                        }},
                        *Solver.stored);

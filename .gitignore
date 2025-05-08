@@ -10,8 +10,6 @@ main
 
 object_files/*
 
-data/*
-
 .cache/*
 
 source/~/*

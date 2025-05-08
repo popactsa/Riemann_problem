@@ -26,17 +26,20 @@ public:
         qCommentary = '#',
         qFileInfo = '!'
     };
-    enum class TypeSpecialChars : char { qNotSet = 0, qNamedType = ':' };
+    enum class TypeSpecialChars : char { qNotSet = 0, qArrayType = ':' };
     struct NamedArg {
         std::string name_;
         std::string value_;
     };
 
     ScenParsingLine() noexcept { Reset(); };
+    // ScenParsingLine(const std::string& line) noexcept { Load(line); }
     ScenParsingLine(const ScenParsingLine&) = default;
     ScenParsingLine(ScenParsingLine&&) = delete;
 
+    constexpr static void SetSep(char new_sep) noexcept { sep = new_sep; }
     void Load(const std::string& line) noexcept;
+    // ScenParsingLine& Load(const std::string& line) noexcept;
     inline constexpr bool IsSolverType() noexcept
     {
         if (head_spec_char_
@@ -55,7 +58,10 @@ public:
     {
         return dash::Flag{type_};
     }
-    inline constexpr std::size_t get_index() const noexcept { return index_; }
+    inline constexpr std::size_t get_index() const
+    {
+        return index_ ? *index_ : throw std::exception();
+    }
     inline constexpr const std::string& get_name() const noexcept
     {
         return name_;
@@ -107,10 +113,11 @@ public:
     }
     ~ScenParsingLine() = default;
 private:
+    static inline char sep = '\t';
     HeadSpecialChars head_spec_char_;
     dash::Flag<VariableType> type_;
     std::string name_;
-    std::size_t index_;
+    std::optional<std::size_t> index_;
     using args_variant =
         std::variant<std::vector<std::string>, std::vector<NamedArg>>;
     args_variant args_;

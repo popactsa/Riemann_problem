@@ -90,15 +90,11 @@ void Parse(T* target, const ScenParsingLine& line)
     auto var_type = line.get_type();
     dash::Expect<dash::ErrorAction::qTerminating, std::range_error>(
         [&var_type]() {
-            return var_type
-                   & dash::Flag{VariableType::qArrayType}
-                   & dash::Flag{VariableType::qCommonType};
+            auto mask = (dash::Flag{VariableType::qArrayType}
+                         | dash::Flag{VariableType::qCommonType});
+            return ((var_type & mask) == mask);
         },
         "Parsed line is not of qArrayType & qCommonType");
-    auto index = line.get_index();
-    dash::Expect<dash::ErrorAction::qTerminating, std::range_error>(
-        [&index, &target]() { return index < target->size(); },
-        "Incorrect array element index read");
     // Iterating through items
     auto& args = line.get_common_args();
     std::size_t i = 0;
@@ -114,9 +110,9 @@ void Parse(T* target, const ScenParsingLine& line)
     auto var_type = line.get_type();
     dash::Expect<dash::ErrorAction::qTerminating, std::range_error>(
         [&var_type]() {
-            return var_type
-                   & (dash::Flag{VariableType::qArrayType}
-                      | dash::Flag{VariableType::qNamedType});
+            auto mask = (dash::Flag{VariableType::qArrayType}
+                         | dash::Flag{VariableType::qNamedType});
+            return ((var_type & mask) == mask);
         },
         "Parsed line is not of qArrayType & qNamedType");
     auto index = line.get_index();

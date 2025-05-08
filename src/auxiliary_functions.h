@@ -303,8 +303,13 @@ public:
     {
         return std::ranges::find(bits_, true) != bits_.cend() ? true : false;
     }
+    constexpr ConstexprBitsetFromE& operator~() noexcept
+    {
+        std::ranges::for_each(bits_, [](bool& bit) { bit ^= true; });
+        return *this;
+    }
     [[nodiscard]]
-    constexpr explicit operator bool() const noexcept
+    constexpr operator bool() const noexcept
     {
         return any();
     }
@@ -351,6 +356,12 @@ public:
         return result;
     }
 
+    constexpr Flag& operator~() noexcept
+    {
+        ~bits_;
+        return *this;
+    }
+
     [[nodiscard]]
     constexpr bool operator==(Flag rhs) const noexcept
     {
@@ -368,7 +379,7 @@ public:
         return bits_.any();
     }
     [[nodiscard]]
-    constexpr explicit operator bool() const noexcept
+    constexpr operator bool() const noexcept
     {
         return any();
     }

@@ -48,8 +48,6 @@ struct InitCond<Solver_Lagrange_1D> : VariableTypeTag<VariableType::qEnumType> {
     E value_;
 };
 
-// void Parse(InitCond<Solver_Lagrange_1D>* target, std::string_view str_value);
-
 template <>
 struct Viscosity<Solver_Lagrange_1D>
     : VariableTypeTag<VariableType::qEnumType> {
@@ -64,9 +62,6 @@ struct Viscosity<Solver_Lagrange_1D>
     Viscosity(E value) : value_{value} {}
     E value_;
 };
-
-// void Parse(Viscosity<Solver_Lagrange_1D>* target, std::string_view
-// str_value);
 
 class Solver_Lagrange_1D : public iSolver<Solver_Lagrange_1D> {
 public:

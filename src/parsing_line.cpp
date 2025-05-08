@@ -9,7 +9,7 @@ void ScenParsingLine::Load(const std::string& line) noexcept
 {
     Reset();
     std::size_t pop_words = 0;
-    std::vector<std::string> split = SplitString(line, '\t');
+    std::vector<std::string> split = SplitString(line, sep);
     switch (static_cast<HeadSpecialChars>(split[0].front())) {
         using enum HeadSpecialChars;
     case qCommentary: {
@@ -30,37 +30,50 @@ void ScenParsingLine::Load(const std::string& line) noexcept
     std::copy(split[0].cbegin() + offset, split[0].cend(), name_.begin());
     ++pop_words;
     dash::Expect<dash::ErrorAction::qTerminating, dash::InvalidLineFormat>(
-        [&split, &pop_words]() { return split.size() >= 2; },
+        [&split]() { return split.size() >= 2; },
         "Provide more arguments(>=2)");
 
-    if (split.size()
-        - pop_words
-        > 1
-        && head_spec_char_
-        == HeadSpecialChars::qVariable) {
-        bool is_uint = dash::IsUnsignedInt(split[1]);
-        if (is_uint) {
-            index_ = std::stoul(split[1]);
-            type_ |= dash::Flag{VariableType::qArrayType};
-            ++pop_words;
+    const auto found_arraytype_char = std::find_if(
+        split.cbegin() + pop_words,
+        pop_words + 2 < split.size() ? split.cbegin() + pop_words + 2
+                                     : split.cend(),
+        [](auto& str) {
+            return str.front()
+                   == static_cast<char>(
+                       ScenParsingLine::TypeSpecialChars::qArrayType);
+        });
+    if (found_arraytype_char != split.cend()) {
+        std::size_t where =
+            std::distance(split.cbegin() + pop_words, found_arraytype_char);
+        if (where == 0) {
+            index_ = {};
+        } else {
+            bool is_uint = dash::IsUnsignedInt(split[1]);
+            if (is_uint) {
+                index_ = std::stoul(split[1]);
+            }
         }
+        pop_words += where + 1;
+        type_ |= dash::Flag{VariableType::qArrayType};
     }
 
-    if (head_spec_char_ == HeadSpecialChars::qVariable) {
-        switch (static_cast<TypeSpecialChars>(split[pop_words].front())) {
-            using enum TypeSpecialChars;
-        case qNamedType: {
-            type_ |= dash::Flag{VariableType::qNamedType};
-            ++pop_words;
-            break;
+    const auto found_namedtype_evidence =
+        std::find_if(split.cbegin() + pop_words, split.cend(),
+                     [](auto& str) { return std::isalpha(str.front()); });
+    type_ |= found_namedtype_evidence
+                     != split.cend()
+                     && split.size()
+                     - pop_words
+                     != 1
+                 ? dash::Flag{VariableType::qNamedType}
+                 : dash::Flag{VariableType::qCommonType};
+
+    {
+        auto mask = dash::Flag{VariableType::qNamedType}
+                    & dash::Flag{VariableType::qArrayType};
+        if ((type_ & mask) == mask && !index_) {
+            type_ &= ~dash::Flag{VariableType::qArrayType};
         }
-        default: {
-            type_ |= dash::Flag{VariableType::qCommonType};
-            break;
-        }
-        }
-    } else {
-        type_ |= dash::Flag{VariableType::qCommonType};
     }
 
     dash::Expect<dash::ErrorAction::qTerminating, dash::InvalidLineFormat>(

@@ -1,4 +1,16 @@
-CompileFlags:
-  CompilationDatabase: "cmake"
 Completion:
   ArgumentLists: None
+
+CompileFlags:
+  CompilationDatabase: build
+  Add:
+    - -I${projectDir}/src
+
+Diagnostics:
+  ClangTidy:
+    Checks: >
+      modernize-*,
+      bugprone-*
+
+Index:
+  Background: Skip  # Ускоряет работу для больших проектов

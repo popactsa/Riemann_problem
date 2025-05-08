@@ -1,5 +1,6 @@
 #include "Solver_Lagrange_1D.h"
 #include "auxiliary_functions.h"
+#include <cstdlib>
 
 void Solver_Lagrange_1D::Start_impl() noexcept
 {
@@ -250,7 +251,7 @@ void Solver_Lagrange_1D::WriteData_impl() const noexcept
     }
     fs::path file_name = data_dir;
     file_name += '/';
-    file_name += std::to_string(step);
+    file_name += std::to_string(step + 1);
     file_name += ".csv";
     std::ofstream fout(file_name);
     char sep = '\t';
@@ -266,6 +267,24 @@ void Solver_Lagrange_1D::WriteData_impl() const noexcept
             << P(i)
             << std::endl;
     }
+}
+
+void Solver_Lagrange_1D::ShowResultAtStep(
+    std::optional<std::size_t> show_step) const noexcept
+{
+    if (!show_step) {
+        show_step = step;
+    }
+    if (*show_step > step || *show_step > nt) {
+        return;
+    }
+    std::string path = "data/";
+    path += write_dir;
+    std::string sys_call = "python ";
+    sys_call +=
+        path + "/post.py " + path + '/' + std::to_string(*show_step) + ".csv";
+    // std::cout << sys_call << std::endl;
+    std::system(sys_call.c_str());
 }
 
 void Solver_Lagrange_1D::ParseLine_impl(const ScenParsingLine& line) noexcept

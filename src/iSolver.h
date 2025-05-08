@@ -51,6 +51,11 @@ public:
     {
         return static_cast<const Solver*>(this)->CheckParameters_impl();
     }
+    void ShowResultAtStep(std::optional<std::size_t> show_step) const noexcept
+    {
+        return static_cast<const Solver*>(this)->ShowResultAtStep_impl(
+            show_step);
+    }
     void ParseLine(const ScenParsingLine& line) noexcept
     {
         static_cast<Solver*>(this)->ParseLine_impl(line);

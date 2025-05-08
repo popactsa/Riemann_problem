@@ -89,6 +89,7 @@ public:
     void GetTimeStep_impl() noexcept;
     void WriteData_impl() const noexcept;
     void CheckParameters_impl() const noexcept;
+    void ShowResultAtStep(std::optional<std::size_t> show_step) const noexcept;
 private:
     double dx;
     std::size_t nx_all;

@@ -30,6 +30,22 @@ concept NamedType =
        };
 
 template <typename T>
+concept EnumType = dash::LabeledAs<T, VariableTypeTag<VariableType::qEnumType>>
+                   && requires(T t) {
+                          { t.parsing_table };
+                          // dash::IsInstanceOf_v<dash::RemoveCVRefT<decltype(t.parsing_table)>,
+                          //                      dash::TinyMap>;
+                          // todo: harden a requirement
+                      };
+
+template <typename T>
+    requires EnumType<T>
+void Parse(T* target, std::string_view str_value)
+{
+    *target = {T::parsing_table.at(str_value)};
+}
+
+template <typename T>
 void Parse(T* target, const ScenParsingLine& line)
 {
     auto line_type = line.get_type();

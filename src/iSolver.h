@@ -12,13 +12,16 @@
 enum class Solvers { qUnknown, qLagrange1D };
 
 template <typename Solver>
-class Wall {};
+struct WallType {};
 
 template <typename Solver>
-class InitCond {};
+struct Wall {};
 
 template <typename Solver>
-class Viscosity {};
+struct InitCond {};
+
+template <typename Solver>
+struct Viscosity {};
 
 template <typename Solver>
 class iSolver {

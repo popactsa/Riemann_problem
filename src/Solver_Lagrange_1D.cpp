@@ -17,7 +17,7 @@ void Solver_Lagrange_1D::Start_impl() noexcept
     SetInitialConditions();
     {
         auto solve_timer = dash::SetScopedTimer("Solving");
-        for (std::size_t step = 1; step < nt; ++step) {
+        for (step = 1; step < nt; ++step) {
             ApplyBoundaryConditions();
             GetTimeStep();
             SolveStep();
@@ -47,7 +47,7 @@ void Solver_Lagrange_1D::CheckParameters_impl() const noexcept
                 status &= nt >= nt_write;
                 status &= CFL > 0.0;
                 status &= mu0 > 0.0;
-                status &= !write_file.empty();
+                status &= !write_dir.empty();
                 return status;
             },
             "Bad Solver_Lagrange_1D parameter read");
@@ -135,21 +135,137 @@ void Solver_Lagrange_1D::GetTimeStep_impl() noexcept
     dt = min_dt;
 }
 
-void Solver_Lagrange_1D::ApplyBoundaryConditions_impl() noexcept {}
-
-void Solver_Lagrange_1D::SolveStep_impl() noexcept {}
-
-void Solver_Lagrange_1D::WriteData_impl() const noexcept {}
-
-void Parse(InitCond<Solver_Lagrange_1D>* target, std::string_view str_value)
+void Solver_Lagrange_1D::ApplyBoundaryConditions_impl() noexcept
 {
-    // Add Enum-type parser!
-    *target = {InitCond<Solver_Lagrange_1D>::parsing_table.at(str_value)};
+    for (std::size_t i = 0; i < 2; ++i) {
+        std::size_t fict = i == 0 ? 0 : nx_all;
+        switch (walls[i].type.value_) {
+            using enum WallType<Solver_Lagrange_1D>::E;
+        case qNoSlip: {
+            v(fict) = i == 0 ? -v(1) : v(nx_all - 1);
+            break;
+        }
+        case qFreeFlux: {
+            v(fict) = i == 0 ? v(1) : v(nx_all - 1);
+            break;
+        }
+        }
+        fict = i == 0 ? 0 : nx_all - 1;
+        rho(fict) = i == 0 ? rho(1) : rho(nx_all - 2);
+        U(fict) = rho(fict);
+    }
 }
 
-void Parse(Viscosity<Solver_Lagrange_1D>* target, std::string_view str_value)
+void Solver_Lagrange_1D::SolveStep_impl() noexcept
 {
-    *target = {Viscosity<Solver_Lagrange_1D>::parsing_table.at(str_value)};
+    arma::vec v_last = v;
+    for (std::size_t i = 0; i < nx_all; ++i) {
+        switch (viscosity.value_) {
+            using enum Viscosity<Solver_Lagrange_1D>::E;
+        case qNone: {
+            omega(i) = 0.0;
+            break;
+        }
+        case qNeuman: {
+            omega(i) = -mu0 * rho(i) * std::pow(v(i + 1) - v(i), 2);
+            omega(i) *= (v(i + 1) - v(i)) >= 0.0 ? 1.0 : -1.0;
+            break;
+        }
+        case qLatter: {
+            omega(i) = (v(i + 1) - v(i) < 0.0)
+                           ? mu0 * rho(i) * std::pow((v(i + 1) - v(i)), 2)
+                           : 0.0;
+            break;
+        }
+        case qLinear: {
+            omega(i) = mu0 * rho(i) * (v(i + 1) - v(i)) * m(i);
+            break;
+        }
+        case qSum: {
+            omega(i) = mu0
+                       * rho(i)
+                       * (v(i + 1) - v(i))
+                       * m(i)
+                       - mu0
+                       * rho(i)
+                       * std::pow(v(i + 1) - v(i), 2);
+            omega(i) *= (v(i + 1) - v(i)) >= 0.0 ? 1.0 : -1.0;
+            break;
+        }
+        }
+    }
+    for (std::size_t i = 2; i < nx_all - 1; ++i) {
+        v(i) -= ((P(i) + omega(i)) - (P(i - 1) + omega(i - 1)))
+                * dt
+                / (0.5 * (m(i) + m(i - 1)));
+    }
+    // Recalculating grid
+    for (std::size_t i = 0; i < nx_all + 1; ++i) {
+        x(i) += v(i) * dt;
+    }
+    for (std::size_t i = 1; i < nx_all - 1; ++i) {
+        double Pb_i = 0.5 * (P(i) + omega(i) + P(i - 1) + omega(i - 1));
+        double Pb_ip1 = 0.5 * (P(i + 1) + omega(i + 1) + P(i) + omega(i));
+        rho(i) /= 1.0 + rho(i) * (v(i + 1) - v(i)) * dt / m(i);
+        double U_temp = U(i);
+        if (is_conservative) {
+            U(i) += -(v(i + 1) * Pb_ip1 - v(i) * Pb_i)
+                    * dt
+                    / m(i)
+                    + std::pow(v_last(i + 1) + v_last(i), 2)
+                    / 8.0
+                    - std::pow(v(i + 1) + v(i), 2)
+                    / 8.0;
+        }
+        if (!is_conservative || U(i) < 0.0) {
+            U(i) = U_temp
+                   / (rho(i)
+                      * (v(i + 1) - v(i))
+                      * (gamma - 1.0)
+                      * dt
+                      / m(i)
+                      + 1.0);
+        }
+    }
+    for (std::size_t i = 0; i < nx_all; ++i) {
+        P(i) = rho(i) * (gamma - 1.0) * U(i);
+    }
+}
+
+void Solver_Lagrange_1D::WriteData_impl() const noexcept
+{
+    namespace fs = std::filesystem;
+    fs::path data_dir{"data"};
+    if (!fs::exists(data_dir)) {
+        fs::create_directory(data_dir);
+    }
+    if ((fs::status(data_dir).permissions() & fs::perms::owner_write)
+        != fs::perms::owner_write) {
+        std::terminate();
+    }
+    data_dir += '/';
+    data_dir += write_dir;
+    if (!fs::exists(data_dir)) {
+        fs::create_directory(data_dir);
+    }
+    fs::path file_name = data_dir;
+    file_name += '/';
+    file_name += std::to_string(step);
+    file_name += ".csv";
+    std::ofstream fout(file_name);
+    char sep = '\t';
+    fout << "x" << sep << "rho" << sep << "v" << sep << "P" << std::endl;
+    for (std::size_t i = 1; i < nx_all - 1; ++i) {
+        fout
+            << (0.5 * (x(i + 1) + x(i)))
+            << sep
+            << rho(i)
+            << sep
+            << (0.5 * (v(i + 1) + v(i)))
+            << sep
+            << P(i)
+            << std::endl;
+    }
 }
 
 void Solver_Lagrange_1D::ParseLine_impl(const ScenParsingLine& line) noexcept

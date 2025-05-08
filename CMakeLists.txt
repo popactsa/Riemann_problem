@@ -34,7 +34,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -Wall -Wextra -Werror -pedantic -std=c++20")
 
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -lsuperlu -Wextra -Werror -pedantic -std=c++20 -march=native")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -Wall -DARMA_DONT_USE_WRAPPER -DARMA_USE_SUPERLU -lopenblas -lsuperlu -Wextra -Werror -pedantic -std=c++20 -march=native")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -Wall -DARMA_DONT_USE_WRAPPER -DARMA_USE_SUPERLU -lopenblas -lsuperlu -Wextra -Werror -pedantic -std=c++20 -march=native")
 
 set(SOURCES
     src/main.cpp

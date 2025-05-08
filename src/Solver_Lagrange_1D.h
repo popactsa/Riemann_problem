@@ -12,18 +12,31 @@
 #include <variant>
 
 template <>
-struct Wall<Solver_Lagrange_1D> : VariableTypeTag<VariableType::qNamedType> {
-    using PolyParsers = dash::VariantWrapper<double*>;
-    double P;
-    double v;
-    dash::TinyMap<std::string, PolyParsers, 2> parsing_table{
-        {{{"P", PolyParsers{dash::qUniqueID<double*>, &P}},
-          {"v", PolyParsers{dash::qUniqueID<double*>, &v}}}}};
+struct WallType<Solver_Lagrange_1D> : VariableTypeTag<VariableType::qEnumType> {
+    enum class E { qNoSlip, qFreeFlux };
+    static constexpr dash::TinyMap<std::string_view, E, 2> parsing_table{
+        {{{"NoSlip", E::qNoSlip}, {"FreeFlux", E::qFreeFlux}}}};
+    WallType() = default;
+    WallType(E value) : value_{value} {}
+    E value_;
 };
 
 template <>
-struct InitCond<Solver_Lagrange_1D>
-    : VariableTypeTag<VariableType::qCommonType> {
+struct Wall<Solver_Lagrange_1D> : VariableTypeTag<VariableType::qNamedType> {
+    using PolyParsers =
+        dash::VariantWrapper<double*, WallType<Solver_Lagrange_1D>*>;
+    double P;
+    double v;
+    WallType<Solver_Lagrange_1D> type;
+    dash::TinyMap<std::string, PolyParsers, 3> parsing_table{
+        {{{"P", PolyParsers{dash::qUniqueID<double*>, &P}},
+          {"v", PolyParsers{dash::qUniqueID<double*>, &v}},
+          {"type", PolyParsers{dash::qUniqueID<WallType<Solver_Lagrange_1D>*>,
+                               &type}}}}};
+};
+
+template <>
+struct InitCond<Solver_Lagrange_1D> : VariableTypeTag<VariableType::qEnumType> {
     enum class E { qTest1, qTest2, qTest3, qTest4 };
     static constexpr dash::TinyMap<std::string_view, E, 4> parsing_table{
         {{{"test1", E::qTest1},
@@ -35,11 +48,11 @@ struct InitCond<Solver_Lagrange_1D>
     E value_;
 };
 
-void Parse(InitCond<Solver_Lagrange_1D>* target, std::string_view str_value);
+// void Parse(InitCond<Solver_Lagrange_1D>* target, std::string_view str_value);
 
 template <>
 struct Viscosity<Solver_Lagrange_1D>
-    : VariableTypeTag<VariableType::qCommonType> {
+    : VariableTypeTag<VariableType::qEnumType> {
     enum class E { qNone, qNeuman, qLatter, qLinear, qSum };
     static constexpr dash::TinyMap<std::string_view, E, 5> parsing_table{
         {{{"None", E::qNone},
@@ -52,7 +65,8 @@ struct Viscosity<Solver_Lagrange_1D>
     E value_;
 };
 
-void Parse(Viscosity<Solver_Lagrange_1D>* target, std::string_view str_value);
+// void Parse(Viscosity<Solver_Lagrange_1D>* target, std::string_view
+// str_value);
 
 class Solver_Lagrange_1D : public iSolver<Solver_Lagrange_1D> {
 public:
@@ -88,7 +102,7 @@ private:
     double CFL;
     double gamma;
     double mu0{2.0};
-    std::string write_file;
+    std::string write_dir = "Solver_Lagrange_1D";
     InitCond<Solver_Lagrange_1D> IC_preset;
     Viscosity<Solver_Lagrange_1D> viscosity{
         Viscosity<Solver_Lagrange_1D>::E::qNone};
@@ -109,7 +123,7 @@ private:
           {"mu0", PolyParsers{dash::qUniqueID<double*>, &mu0}},
 
           {"write_file",
-           PolyParsers{dash::qUniqueID<std::string*>, &write_file}},
+           PolyParsers{dash::qUniqueID<std::string*>, &write_dir}},
 
           {"InitCond",
            PolyParsers{dash::qUniqueID<InitCond<Solver_Lagrange_1D>*>,
@@ -129,6 +143,7 @@ private:
     arma::vec omega;
     double t = 0.0;
     double dt;
+    std::size_t step = 0;
 };
 
 #endif // SOLVER_LAGRANGE_1D_H

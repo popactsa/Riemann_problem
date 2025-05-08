@@ -9,7 +9,7 @@ void ScenParsingLine::Load(const std::string& line) noexcept
 {
     Reset();
     std::size_t pop_words = 0;
-    std::vector<std::string> split = SplitString(line, ' ');
+    std::vector<std::string> split = SplitString(line, '\t');
     switch (static_cast<HeadSpecialChars>(split[0].front())) {
         using enum HeadSpecialChars;
     case qCommentary: {

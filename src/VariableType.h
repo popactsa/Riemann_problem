@@ -5,7 +5,8 @@
 enum class VariableType : std::uint8_t {
     qCommonType = 1 << 0,
     qNamedType = 1 << 1,
-    qArrayType = 1 << 2
+    qArrayType = 1 << 2,
+    qEnumType = 1 << 3 // Shouldn't be assigned as a line type
 };
 
 template <VariableType TagValue>

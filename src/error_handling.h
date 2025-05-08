@@ -58,10 +58,9 @@ public:
 
 enum class ErrorAction { qIgnore, qThrowing, qTerminating, qLogging };
 
-constexpr ErrorAction qDefaultErrorAction = ErrorAction::qThrowing;
-
-template <ErrorAction action = qDefaultErrorAction, typename exc, typename C>
-constexpr void Expect(const C cond, const std::string& msg)
+template <ErrorAction action, typename exc, typename C>
+constexpr void Expect(const C cond,
+                      const std::string& msg = "<no message provided>")
 ////////Tour of C++ 2022 B.Stroustrup p.49/////////
 // @does: Facilitates error diagnostics
 {

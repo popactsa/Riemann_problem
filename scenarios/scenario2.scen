@@ -3,6 +3,7 @@
 #first line is always a solver type name
 !SolverType Lagrange1D
 walls 0 : v 1.0 P 2.0
+walls 1 : v 1.0 P 3.0
 x_start 0.0
 x_end 1.0
 nx 100

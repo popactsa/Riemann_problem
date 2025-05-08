@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <array>
 #include <bitset>
+#include <chrono>
 #include <climits>
 #include <cstdint>
 #include <initializer_list>
@@ -38,6 +39,25 @@ template <typename F>
 [[nodiscard]] auto Finally(F f) noexcept
 {
     return FinalAction{f};
+}
+
+template <typename TimerT = std::chrono::milliseconds>
+    requires std::is_convertible_v<TimerT, std::chrono::milliseconds>
+[[nodiscard]] auto SetScopedTimer(std::string_view timer_name) noexcept
+{
+    const auto start_time = std::chrono::system_clock::now();
+    return FinalAction{[timer_name, start_time]() {
+        const char* quot = "===============";
+        std::cout << quot << ' ' << timer_name << ' ' << quot << '\n';
+        const auto final_time = std::chrono::system_clock::now() - start_time;
+        using namespace std::chrono_literals;
+        std::cout << std::chrono::duration_cast<TimerT>(final_time) << " \n";
+        std::cout
+            << quot
+            << std::string(timer_name.size() + 2, '=')
+            << quot
+            << std::endl;
+    }};
 }
 
 /**

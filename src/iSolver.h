@@ -24,6 +24,30 @@ template <typename Solver>
 class iSolver {
 public:
     void Start() noexcept { static_cast<Solver*>(this)->Start_impl(); }
+    void ApplyBoundaryConditions() noexcept
+    {
+        return static_cast<Solver*>(this)->ApplyBoundaryConditions_impl();
+    }
+    void SolveStep() noexcept
+    {
+        return static_cast<Solver*>(this)->SolveStep_impl();
+    }
+    void SetInitialConditions() noexcept
+    {
+        return static_cast<Solver*>(this)->SetInitialConditions_impl();
+    }
+    void GetTimeStep() noexcept
+    {
+        return static_cast<Solver*>(this)->GetTimeStep_impl();
+    }
+    void WriteData() const noexcept
+    {
+        return static_cast<const Solver*>(this)->WriteData_impl();
+    }
+    void CheckParameters() const noexcept
+    {
+        return static_cast<const Solver*>(this)->CheckParameters_impl();
+    }
     void ParseLine(const ScenParsingLine& line) noexcept
     {
         static_cast<Solver*>(this)->ParseLine_impl(line);

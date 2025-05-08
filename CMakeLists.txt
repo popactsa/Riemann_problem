@@ -13,18 +13,28 @@ macro(HEADER_DIRECTORIES return_list)
     set(${return_list} ${dir_list})
 endmacro()
 
-# set(CMAKE_OBJECT_PATH_DIR "${CMAKE_BINARY_DIR}/object_files")
-# set(CMAKE_CLEAN_NO_CUSTOM 1)
-# set(CMAKE_KEEP_TEMP_FILES ON)
-# # set(CMAKE_VERBOSE_MAKEFILE ON)
-# file(MAKE_DIRECTORY ${CMAKE_OBJECT_PATH_DIR})
+# find_package(SuperLU QUIET)
+# if(NOT SuperLU_FOUND)
+#     find_path(SUPERLU_INCLUDE_DIR NAMES supermatrix.h PATHS /usr/include/superlu)
+#     find_library(SUPERLU_LIBRARY NAMES superlu PATHS /usr/lib /usr/local/lib)
 #
-# set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_OBJECT_PATH_DIR})
-# set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_OBJECT_PATH_DIR})
-# set(CMAKE_OBJECT_OUTPUT_DIRECTORY ${CMAKE_OBJECT_PATH_DIR})
+#     if(SUPERLU_INCLUDE_DIR AND SUPERLU_LIBRARY)
+#         set(SuperLU_FOUND TRUE)
+#         set(SuperLU_INCLUDE_DIRS ${SUPERLU_INCLUDE_DIR})
+#         set(SuperLU_LIBRARIES ${SUPERLU_LIBRARY})
+#         execute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --blue --bold
+#             "[INFO] SuperLU found!")
+#     else()
+#         message(FATAL_ERROR "SuperLU not found")
+#     endif()
+# endif()
+# find_package(Armadillo REQUIRED)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -Wall -Wextra -Werror -pedantic -std=c++20")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -Wall -Wextra -Werror -pedantic -std=c++20")
+
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -lsuperlu -Wextra -Werror -pedantic -std=c++20 -march=native")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -Wall -DARMA_DONT_USE_WRAPPER -DARMA_USE_SUPERLU -lopenblas -lsuperlu -Wextra -Werror -pedantic -std=c++20 -march=native")
 
 set(SOURCES
     src/main.cpp
@@ -40,6 +50,18 @@ list(LENGTH header_dir_list header_dir_list_count)
 execute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --blue --bold
     "[INFO] Found ${header_dir_list_count} headers")
 add_executable(${PROJECT_NAME} ${SOURCES})
+
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${ARMADILLO_INCLUDE_DIRS}
+    ${SUPERLU_INCLUDE_DIRS}
+)
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    ${ARMADILLO_LIBRARIES}
+    ${SUPERLU_LIBRARIES}
+)
+if(ARMADILLO_FOUND)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE ARMA_USE_SUPERLU)
+endif()
 target_include_directories(
     ${PROJECT_NAME}
     PUBLIC

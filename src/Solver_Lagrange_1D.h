@@ -5,6 +5,8 @@
 #include "VariableType.h"
 #include "auxiliary_functions.h"
 #include "iSolver.h"
+#define ARMA_USE_SUPERLU 1
+#include <armadillo>
 #include <cstddef>
 #include <tuple>
 #include <variant>
@@ -67,14 +69,22 @@ public:
     void Start_impl() noexcept;
     void ParseLine_impl(const ScenParsingLine& line) noexcept;
     void InitializeDependent_impl() noexcept;
+    void ApplyBoundaryConditions_impl() noexcept;
+    void SolveStep_impl() noexcept;
+    void SetInitialConditions_impl() noexcept;
+    void GetTimeStep_impl() noexcept;
+    void WriteData_impl() const noexcept;
+    void CheckParameters_impl() const noexcept;
 private:
-    std::size_t nx;
+    double dx;
     std::size_t nx_all;
+
+    std::size_t nx;
     std::size_t nt;
     std::size_t nt_write;
     bool is_conservative;
-    double x_end;
     double x_start;
+    double x_end;
     double CFL;
     double gamma;
     double mu0{2.0};
@@ -85,28 +95,40 @@ private:
     std::array<Wall<Solver_Lagrange_1D>, 2> walls;
 
     dash::TinyMap<std::string, PolyParsers, 13> parsing_table{
-        {{{"x_start", PolyParsers{dash::qUniqueID<double*>, &x_start}},
-          {"nx", PolyParsers{dash::qUniqueID<std::size_t*>, &nx}},
+        {{{"nx", PolyParsers{dash::qUniqueID<std::size_t*>, &nx}},
           {"nt", PolyParsers{dash::qUniqueID<std::size_t*>, &nt}},
+          {"nt_write", PolyParsers{dash::qUniqueID<std::size_t*>, &nt_write}},
+
+          {"is_conservative",
+           PolyParsers{dash::qUniqueID<bool*>, &is_conservative}},
+
+          {"x_start", PolyParsers{dash::qUniqueID<double*>, &x_start}},
+          {"x_end", PolyParsers{dash::qUniqueID<double*>, &x_end}},
+          {"CFL", PolyParsers{dash::qUniqueID<double*>, &CFL}},
+          {"gamma", PolyParsers{dash::qUniqueID<double*>, &gamma}},
+          {"mu0", PolyParsers{dash::qUniqueID<double*>, &mu0}},
+
+          {"write_file",
+           PolyParsers{dash::qUniqueID<std::string*>, &write_file}},
+
           {"InitCond",
            PolyParsers{dash::qUniqueID<InitCond<Solver_Lagrange_1D>*>,
                        &IC_preset}},
-          {"gamma", PolyParsers{dash::qUniqueID<double*>, &gamma}},
-          {"mu0", PolyParsers{dash::qUniqueID<double*>, &mu0}},
+
           {"viscosity",
            PolyParsers{dash::qUniqueID<Viscosity<Solver_Lagrange_1D>*>,
                        &viscosity}},
-          {"is_conservative",
-           PolyParsers{dash::qUniqueID<bool*>, &is_conservative}},
-          {"CFL", PolyParsers{dash::qUniqueID<double*>, &CFL}},
-          {"write_file",
-           PolyParsers{dash::qUniqueID<std::string*>, &write_file}},
+
           {"walls",
            PolyParsers{
                dash::qUniqueID<std::array<Wall<Solver_Lagrange_1D>, 2>*>,
-               &walls}},
-          {"nt_write", PolyParsers{dash::qUniqueID<std::size_t*>, &nt_write}},
-          {"x_end", PolyParsers{dash::qUniqueID<double*>, &x_end}}}}};
+               &walls}}}}};
+
+    arma::vec P, rho, U, m;
+    arma::vec v, x;
+    arma::vec omega;
+    double t = 0.0;
+    double dt;
 };
 
 #endif // SOLVER_LAGRANGE_1D_H

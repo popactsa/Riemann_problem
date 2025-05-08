@@ -31,9 +31,11 @@ int main()
         if (Solver.stored) {
             std::visit(dash::overloaded{[&scenario_file](auto& arg) {
                            arg.ReadParameters(scenario_file);
+                           arg.Start();
                        }},
                        *Solver.stored);
         }
     }
+
     return 0;
 }

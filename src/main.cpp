@@ -2,9 +2,11 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
+#include "Solver_Godunov_1D.h"
 #include "Solver_Lagrange_1D.h"
-#include "error_handling.h"
 #include "iSolver.h"
+
+#include "error_handling.h"
 #include "io.h"
 
 struct winsize w;
@@ -23,20 +25,24 @@ int main()
             Solver.emplace<Solver_Lagrange_1D>();
             break;
         }
+        case qGodunov1D: {
+            Solver.emplace<Solver_Godunov_1D>();
+            break;
+        }
         default: {
             throw dash::ParserException("Incorrect solver name");
             break;
         }
         }
-        if (Solver.stored) {
-            std::visit(dash::overloaded{[&scenario_file](auto& arg) {
-                           arg.ReadParameters(scenario_file);
-                           arg.Start();
-                           // {} - stands for 'the last step'
-                           arg.ShowResultAtStep({});
-                       }},
-                       *Solver.stored);
-        }
+        // if (Solver.stored) {
+        //     std::visit(dash::overloaded{[&scenario_file](auto& arg) {
+        //                    arg.ReadParameters(scenario_file);
+        //                    arg.Start();
+        //                    // {} - stands for 'the last step'
+        //                    arg.ShowResultAtStep({});
+        //                }},
+        //                *Solver.stored);
+        // }
     }
 
     return 0;

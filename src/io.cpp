@@ -18,7 +18,8 @@ inline constexpr std::size_t qAscTimeStrSize = 25;
 inline constexpr std::size_t qMaxFilenameSize = 35;
 inline constexpr std::size_t qMaxSolvernameSize = 15;
 std::unordered_map<std::string, Solvers> SolversNameTypeTable{
-    {"Lagrange1D", Solvers::qLagrange1D}};
+    {"Lagrange1D", Solvers::qLagrange1D},
+    {"Godunov1D", Solvers::qGodunov1D}};
 
 std::size_t ChooseFileNumberInRange(const std::size_t min,
                                     const std::size_t max) noexcept

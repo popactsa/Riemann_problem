@@ -11,6 +11,7 @@ set(SOURCES
     src/parsing_line.cpp
     src/Parser.cpp
     src/Solver_Lagrange_1D.cpp
+    src/Solver_Godunov_1D.cpp
 )
 
 # Macro to find all header directories

@@ -9,8 +9,6 @@
 #include <type_traits>
 #include <variant>
 
-enum class Solvers { qUnknown, qLagrange1D };
-
 template <typename Solver>
 struct WallType {};
 
@@ -87,6 +85,8 @@ private:
 };
 
 class Solver_Lagrange_1D;
-using PolySolver = dash::VariantWrapper<Solver_Lagrange_1D>;
+class Solver_Godunov_1D;
+enum class Solvers { qUnknown, qLagrange1D, qGodunov1D };
+using PolySolver = dash::VariantWrapper<Solver_Lagrange_1D, Solver_Godunov_1D>;
 
 #endif // ISOLVER_H

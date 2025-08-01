@@ -2,3 +2,4 @@ foo_int: 5
 foo_char: a
 foo_string: hello, world
 foo_double: 7.7
+foo_bool: true

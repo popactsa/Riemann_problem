@@ -1,5 +1,7 @@
 #ifndef SOLVER_HPP
 #define SOLVER_HPP
+#include <filesystem>
+#include "auxiliary_functions.hpp"
 #include "io.hpp"
 
 // CRTP-interface for solvers
@@ -13,8 +15,10 @@ public:
 private:
     Solver() {}
 
-    Io::parsing_table_t get_parsing_table();
     friend Spec;
+
+    inline static auto scenarios_dir = dash::cmake_dir() / "scenarios";
+    Io::parsing_table_t get_parsing_table();
     bool parameters_loaded{false};
 };
 

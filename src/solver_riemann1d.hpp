@@ -11,9 +11,17 @@ public:
 private:
     Io& io_;
     Io::parsing_table_t get_parsing_table_impl();
+    double lx;
     int    nx;
     int    nt;
+    double CFL;
     double gamma;
+    double u;
+    bool   is_conservative;
+
+    static constexpr int nx_fict = 1;
+    double               dx;
+    double               dt;
 };
 
 #endif    // SOLVER_RIEMANN1D_HPP

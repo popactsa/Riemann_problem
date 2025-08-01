@@ -6,11 +6,16 @@
 #include <cassert>
 #include <chrono>
 #include <climits>
+#include <filesystem>
 #include <format>
 #include <iostream>
 #include <mutex>
 
 namespace dash {
+inline auto cmake_dir() {
+    return std::filesystem::current_path().parent_path().parent_path();
+}
+
 inline void rc_free_print(std::string_view msg) {
     static std::mutex           mtx;
     std::lock_guard<std::mutex> lock(mtx);

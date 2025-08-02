@@ -10,16 +10,17 @@ template<typename Spec>
 class Solver {
 public:
     inline void load_parameters_from_file(const std::filesystem::path& path);
-    inline void run();
+    inline void run(std::size_t num_threads = 1);
 
 private:
-    Solver() {}
-
-    friend Spec;
+    Solver(Io& io): io_(io) {}
 
     inline static auto scenarios_dir = dash::cmake_dir() / "scenarios";
-    Io::parsing_table_t get_parsing_table();
-    bool parameters_loaded{false};
+
+    friend Spec;
+    Io&         io_;
+    bool        parameters_loaded_{false};
+    std::size_t num_threads_;
 };
 
 ////////////////////////////////////////////////////////
@@ -31,13 +32,9 @@ void Solver<Spec>::load_parameters_from_file(
 }
 
 template<typename Spec>
-void Solver<Spec>::run() {
+void Solver<Spec>::run(std::size_t num_threads) {
+    num_threads_ = num_threads;
     static_cast<Spec&>(*this).run_impl();
-}
-
-template<typename Spec>
-Io::parsing_table_t Solver<Spec>::get_parsing_table() {
-    return static_cast<Spec&>(*this).get_parsing_table_impl();
 }
 
 #endif    // SOLVER_HPP

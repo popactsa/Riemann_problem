@@ -1,11 +1,15 @@
 #ifndef IO_HPP
 #define IO_HPP
+#include <yaml-cpp/node/parse.h>
+#include <yaml-cpp/yaml.h>
 #include <filesystem>
 #include <functional>
 #include <iostream>
 #include <string_view>
 #include <unordered_map>
 #include "parsers.hpp"
+
+//////////////////////////////////////////////////////////////
 
 class Io {
 public:
@@ -14,20 +18,25 @@ public:
 
     Io():
         Io(std::cin,
-           std::cout) {}
+           std::cout,
+           "latest") {}
 
-    Io(std::istream& in,
-       std::ostream& out);
+    Io(std::istream&         in,
+       std::ostream&         out,
+       std::filesystem::path write_dir);
     void load_parameters_from_yaml(
         const std::filesystem::path& path,
         const parsing_table_t&       par_tbl) const;
+    const std::filesystem::path& get_write_dir() const;
 
 private:
     [[maybe_unused]]
     std::istream& in_;
     [[maybe_unused]]
-    std::ostream& out_;
+    std::ostream&         out_;
+    std::filesystem::path write_dir_;
     bool is_file_readable(const std::filesystem::path& path) const;
+    bool is_dir_writeable(const std::filesystem::path& path) const;
     void ParseScalar(
         const parser_t&  parser,
         std::string_view source) const;

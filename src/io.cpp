@@ -1,16 +1,22 @@
 #include "io.hpp"
-#include <yaml-cpp/node/parse.h>
-#include <yaml-cpp/yaml.h>
 #include <cassert>
+#include <filesystem>
 #include <format>
 #include <functional>
 #include "parsers.hpp"
 
 Io::Io(
-    std::istream& in,
-    std::ostream& out):
+    std::istream&         in,
+    std::ostream&         out,
+    std::filesystem::path write_dir):
     in_(in),
-    out_(out) {}
+    out_(out),
+    write_dir_(write_dir) {
+    if (!is_dir_writeable(write_dir_)) {
+        throw std::runtime_error(
+            "Write directory is not writable/can't be created");
+    }
+}
 
 void Io::load_parameters_from_yaml(
     const std::filesystem::path& path,
@@ -92,4 +98,19 @@ bool Io::is_file_readable(const std::filesystem::path& path) const {
     auto file_perms = fs::status(path).permissions();
     std::cout << path.native() << std::endl;
     return fs::is_regular_file(path) && ((file_perms & owner_read) != none);
+}
+
+bool Io::is_dir_writeable(const std::filesystem::path& path) const {
+    namespace fs = std::filesystem;
+    using enum fs::perms;
+    std::error_code ignored_ec;
+    if (!fs::exists(path) && !fs::create_directory(path, ignored_ec)) {
+        return false;
+    }
+    auto file_perms = fs::status(path).permissions();
+    return fs::is_directory(path) && ((file_perms & owner_write) != none);
+}
+
+const std::filesystem::path& Io::get_write_dir() const {
+    return write_dir_;
 }

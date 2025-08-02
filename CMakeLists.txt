@@ -41,6 +41,8 @@ endif()
 # set(CMAKE_CXX_CLANG_TIDY "clang-tidy")
 
 find_package(yaml-cpp REQUIRED)
+find_package(SuperLU QUIET)
+find_package(Armadillo REQUIRED)
 
 include_directories(src)
 add_subdirectory(src)

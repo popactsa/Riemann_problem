@@ -61,4 +61,20 @@ auto parser(T& variable) {
     };
 }
 
+template<typename T>
+    requires std::is_enum_v<T>
+auto parser(
+    const std::unordered_map<
+        std::string_view,
+        T>& table,
+    T&      variable) {
+    return [&](std::string_view source, std::size_t) {
+        auto found = table.find(source);
+        if (found == table.end()) {
+            throw std::runtime_error("No such enum value");
+        }
+        variable = found->second;
+    };
+}
+
 #endif    // PARSERS_HPP

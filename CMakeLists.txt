@@ -1,123 +1,85 @@
 cmake_minimum_required(VERSION 3.10...3.15)
-project(Riemann)
+project(chlorum)
 
-# Compiler settings
+############# Compiler settings ##############
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -Wall -DARMA_DONT_USE_WRAPPER -DARMA_USE_SUPERLU -lopenblas -lsuperlu -Wextra -Werror -pedantic -std=c++20 -march=native")
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_C_STANDARD 17)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
 
-# Main project sources
-set(SOURCES
-    src/io.cpp
-    src/parsing_line.cpp
-    src/Parser.cpp
-    src/Solver_Lagrange_1D.cpp
-    src/Solver_Godunov_1D.cpp
-)
+# # disable standard flags
+# set(CMAKE_C_FLAGS "")
+# set(CMAKE_CXX_FLAGS "")
+# set(CMAKE_C_FLAGS_DEBUG "")
+# set(CMAKE_CXX_FLAGS_DEBUG "")
+# set(CMAKE_C_FLAGS_RELEASE "")
+# set(CMAKE_CXX_FLAGS_RELEASE "")
 
-# Macro to find all header directories
-macro(HEADER_DIRECTORIES return_list)
-    file(GLOB_RECURSE new_list 
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.hpp"
-    )
-    set(dir_list "")
-    foreach(file_path ${new_list})
-        get_filename_component(dir_path ${file_path} DIRECTORY)
-        set(dir_list ${dir_list} ${dir_path})
-    endforeach()
-    list(REMOVE_DUPLICATES dir_list)
-    set(${return_list} ${dir_list})
-endmacro()
-
-HEADER_DIRECTORIES(header_dir_list)
-list(LENGTH header_dir_list header_dir_list_count)
-execute_process(COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --blue --bold
-    "[INFO] Found ${header_dir_list_count} headers")
-
-add_library(project_objects OBJECT ${SOURCES})
-
-target_include_directories(project_objects PRIVATE
-    ${header_dir_list}
-)
-
-target_include_directories(project_objects SYSTEM PRIVATE
-    ${ARMADILLO_INCLUDE_DIRS}
-    ${SUPERLU_INCLUDE_DIRS}
-)
-
-# Main executable
-add_executable(${PROJECT_NAME} src/main.cpp $<TARGET_OBJECTS:project_objects>)
-
-target_include_directories(${PROJECT_NAME} PRIVATE
-    ${header_dir_list}
-)
-
-target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
-    ${ARMADILLO_INCLUDE_DIRS}
-    ${SUPERLU_INCLUDE_DIRS}
-    ${googletest_SOURCE_DIR}/googletest/include
-)
-
-target_link_libraries(${PROJECT_NAME} PRIVATE
-    ${ARMADILLO_LIBRARIES}
-    ${SUPERLU_LIBRARIES}
-)
-
-if(ARMADILLO_FOUND)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE ARMA_USE_SUPERLU)
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug)
 endif()
 
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E create_symlink
-    ${CMAKE_BINARY_DIR}/compile_commands.json
-    ${CMAKE_SOURCE_DIR}/compile_commands.json
-    COMMENT "Creating symlink for LSP"
+find_program(CLANGXX_FOUND NAMES "clang++")
+find_program(GXX_FOUND NAMES "g++")
+if(CLANGXX_FOUND)
+    set(CMAKE_CXX_COMPILER "clang++")
+elseif(GXX_FOUND)
+    set(CMAKE_CXX_COMPILER "g++")
+endif()
+
+find_program(CLANG_FOUND NAMES "clang")
+find_program(GCC_FOUND NAMES "gcc")
+if(CLANG_FOUND)
+    set(CMAKE_C_COMPILER "clang")
+elseif(GCC_FOUND)
+    set(CMAKE_C_COMPILER "gcc")
+endif()
+
+# set(CMAKE_CXX_CLANG_TIDY "clang-tidy")
+
+find_package(yaml-cpp REQUIRED)
+find_package(SuperLU QUIET)
+find_package(Armadillo REQUIRED)
+
+include_directories(src)
+add_subdirectory(src)
+add_subdirectory(tests)
+
+############# LSP support ##############
+add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/compile_commands.json
+    COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_BINARY_DIR}/compile_commands.json
+        ${CMAKE_SOURCE_DIR}/compile_commands.json
+    DEPENDS ${CMAKE_BINARY_DIR}/compile_commands.json
 )
+add_custom_target(copy_compile_commands ALL DEPENDS ${CMAKE_SOURCE_DIR}/compile_commands.json)
 
-# Tests configuration
-enable_testing()
+############# Clang-format ##############
+find_program(CLANG_FORMAT_EXE NAMES "clang-format")
+if(CLANG_FORMAT_EXE)
+    file(GLOB_RECURSE CODEBASE
+        src/*.cpp src/*.hpp src/*.h
+        tests/*.cpp tests/*.hpp tests/*.h
+    )
+    add_custom_target(
+        apply_clang-format
+        COMMAND ${CLANG_FORMAT_EXE} -style=file -i ${CODEBASE}
+        COMMENT "Applying clang-format..."
+    )
+    if(TARGET ${PROJECT_NAME}_run)
+        add_dependencies(${PROJECT_NAME}_run apply_clang-format)
+    endif()
+    if(TARGET ${PROJECT_NAME}_lib)
+        add_dependencies(${PROJECT_NAME}_lib apply_clang-format)
+    endif()
+    if(TARGET ${PROJECT_NAME}_tests)
+        add_dependencies(${PROJECT_NAME}_tests apply_clang-format)
+    endif()
+else()
+    message(WARNING "clang-format not found!")
+endif()
 
-# Fetch GoogleTest
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
-)
-FetchContent_MakeAvailable(googletest)
-
-set(TEST_SOURCES
-    tests/parser_test.cpp
-    tests/parser_unittest.cpp
-)
-
-add_executable(
-    tests
-    ${TEST_SOURCES}
-    $<TARGET_OBJECTS:project_objects>
-)
-
-target_include_directories(tests PRIVATE
-    ${header_dir_list}
-)
-
-target_include_directories(tests SYSTEM PRIVATE
-    ${ARMADILLO_INCLUDE_DIRS}
-    ${SUPERLU_INCLUDE_DIRS}
-    ${googletest_SOURCE_DIR}/googletest/include
-)
-
-
-target_link_libraries(
-    tests
-  GTest::gtest_main
-  ${ARMADILLO_LIBRARIES}
-  ${SUPERLU_LIBRARIES}
-)
-target_compile_options(tests PRIVATE
-    -DUNIT_TESTING
-)
-
-include(GoogleTest)
-gtest_discover_tests(tests)

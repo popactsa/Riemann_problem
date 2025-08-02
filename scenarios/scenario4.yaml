@@ -1,0 +1,12 @@
+lx: 1.0
+nx: 101
+nt: 201
+nt write: 10
+mu0: 2.0
+CFL: 0.5
+viscosity type: Neuman
+wall type: NoSlip
+gamma: 1.4
+u: 1.0
+initial conditions preset: 0
+is conservative: true

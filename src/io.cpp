@@ -1,217 +1,116 @@
-#include "io.h"
-
-#include <chrono>
+#include "io.hpp"
+#include <cassert>
+#include <filesystem>
 #include <format>
-#include <fstream>
-#include <iostream>
-#include <sys/ioctl.h>
-#include <unordered_map>
+#include <functional>
+#include "parsers.hpp"
 
-#include "error_handling.h"
-#include "iSolver.h"
-#include "parsing_line.h"
-
-extern struct winsize w;
-
-namespace {
-inline constexpr std::size_t qAscTimeStrSize = 25;
-inline constexpr std::size_t qMaxFilenameSize = 35;
-inline constexpr std::size_t qMaxSolvernameSize = 15;
-std::unordered_map<std::string, Solvers> SolversNameTypeTable{
-    {"Lagrange1D", Solvers::qLagrange1D},
-    {"Godunov1D", Solvers::qGodunov1D}};
-
-std::size_t ChooseFileNumberInRange(const std::size_t min,
-                                    const std::size_t max) noexcept
-// @returns : a number of a entered via std::cin file
-// Checks if file is readable, chosen number fits in [min, max]
-{
-    if (min == max)
-        return min;
-    std::string read;
-    while (std::getline(std::cin, read)) {
-        try {
-            std::size_t choose = std::stoul(read);
-            if (choose >= min && choose <= max)
-                return choose;
-            std::cout
-                << "please, choose value in range ["
-                << min
-                << ", "
-                << max
-                << "]"
-                << std::endl;
-        } catch (std::invalid_argument& err) {
-            if (!read.empty())
-                std::cout << "enter only integers" << std::endl;
-            else
-                std::cout << "~empty input~" << std::endl;
-            continue;
-        }
-    }
-    return -1;
-}
-
-std::string GetScenSolverName(const fs::path& file) noexcept
-// @does : Opens `file`, searches for a solver name
-// @returns : Solver's name
-// If read name is found in table prints it, else prints "unknown"
-{
-    std::ifstream fin(file);
-    if (fin.is_open()) {
-        std::string line;
-        ScenParsingLine parsed;
-        while (std::getline(fin, line)) {
-            parsed.Load(line);
-            if (!parsed.IsSolverType()) {
-                continue;
-            }
-            auto found = SolversNameTypeTable.find(parsed.get_common_arg_at(0));
-            if (found != SolversNameTypeTable.end()) {
-                return found->first;
-            }
-        }
-    }
-    return std::string("unknown");
-}
-
-std::string ConvertFSTimeToString(const fs::file_time_type& time) noexcept
-{
-    std::time_t chrono_time = std::chrono::system_clock::to_time_t(
-        std::chrono::file_clock::to_sys(time));
-    std::string str = std::asctime(std::localtime(&chrono_time));
-    str.pop_back(); // rm the trailing '\n' put by `asctime`
-    return str;
-}
-
-#ifdef __cpp_lib_format
-inline void FmtAddAlign(std::string& fmt,
-                        std::string_view align,
-                        const std::vector<std::size_t>& sizes) noexcept
-// @does : Appends to `fmt` sizes with a specified align for ALL
-// @returns : void
-{
-    for (auto it : sizes) {
-        fmt += "{:";
-        fmt += align;
-        fmt += std::to_string(it);
-        fmt += "}";
+Io::Io(
+    std::istream&         in,
+    std::ostream&         out,
+    std::filesystem::path write_dir):
+    in_(in),
+    out_(out),
+    write_dir_(write_dir) {
+    if (!is_dir_writeable(write_dir_)) {
+        throw std::runtime_error(
+            "Write directory is not writable/can't be created");
     }
 }
 
-inline void FmtAddAlign(std::string& fmt,
-                        const std::vector<std::pair<std::string, std::size_t>>&
-                            align_n_sizes) noexcept
-// @does : Appends to `fmt` sizes with a specified align for EACH
-{
-    for (auto [align, size] : align_n_sizes)
-        FmtAddAlign(fmt, align, {size});
-}
-#endif // __cpp_lib_format
-
-} // namespace
-
-bool IsReadable(const fs::path& p) noexcept
-{
-    if (!fs::exists(p)) {
-        return false;
-    } else if ((fs::status(p).permissions() & fs::perms::owner_read)
-               != fs::perms::owner_read) {
-        return false;
-    } else if ((fs::is_empty(p))) {
-        return false;
+void Io::load_parameters_from_yaml(
+    const std::filesystem::path& path,
+    const parsing_table_t&       par_tbl) const {
+    if (!std::string_view(path.c_str()).ends_with(".yaml")) {
+        throw std::runtime_error("Not a .yaml file");
     }
-    return true;
-}
-
-std::pair<Solvers, fs::path> ChooseFileInDir(const fs::path& dir,
-                                             std::size_t min,
-                                             std::size_t max,
-                                             std::string_view postfix) noexcept
-{
-    std::size_t chosen = ChooseFileNumberInRange(min, max);
-    std::size_t cnt = 0;
-    for (const auto& dir_entry : std::filesystem::directory_iterator{
-             dir, std::filesystem::directory_options::skip_permission_denied}) {
-        using enum std::filesystem::perms;
-        auto file_perms = std::filesystem::status(dir_entry).permissions();
-        if (!((file_perms & owner_read)
-              == owner_read
-              && dir_entry.path().string().ends_with(postfix))) {
-            continue;
-        }
-        if (++cnt != chosen) {
-            continue;
-        }
-
-        ScenParsingLine parsed_line;
-        std::string line;
-        std::ifstream fin(dir_entry.path());
-        if (fin.is_open()) {
-            while (std::getline(fin, line)) {
-                parsed_line.Load(line);
-                if (parsed_line.IsSolverType()) {
-                    break;
-                }
-            }
-            if (fin.eof()) {
-                return {Solvers::qUnknown, dir_entry.path()};
-            }
-            Solvers solver_type = Solvers::qUnknown;
-            auto found =
-                SolversNameTypeTable.find(parsed_line.get_common_arg_at(0));
-            if (found != SolversNameTypeTable.end())
-                solver_type = found->second;
-            fin.close();
-            return {solver_type, dir_entry.path()};
-        }
+    if (!is_file_readable(path)) {
+        throw std::runtime_error("Can't open parameters file");
     }
-    return {};
-}
-
-std::size_t PrintFilenames(const fs::path& dir,
-                           std::string_view postfix) noexcept
-{
-    int cnt{0};
-#ifdef __cpp_lib_format
-    using namespace std::literals::string_literals;
-    std::string fmt = "      {:>2} : ";
-    // supposing you have less than 100 scenarios..
-    const std::size_t init_size = 11; // depending on fmt
-    FmtAddAlign(
-        fmt, {{".<"s, qMaxFilenameSize},
-              {".<"s, qMaxSolvernameSize},
-              {".>"s,
-               w.ws_col - init_size - qMaxFilenameSize - qMaxSolvernameSize}});
-#endif // __cpp_lib_format
-    for (const auto& dir_entry : fs::directory_iterator{
-             dir, fs::directory_options::skip_permission_denied}) {
-        using enum std::filesystem::perms;
-        std::string rp_str = std::filesystem::relative(dir_entry.path(), dir);
-        if (!rp_str.ends_with(postfix)) {
-            continue;
+    YAML::Node config = YAML::LoadFile(path);
+    for (const auto& pair : config) {
+        auto key       = pair.first.as<std::string_view>();
+        auto found_key = par_tbl.find(key);
+        if (found_key == par_tbl.end()) {
+            throw std::runtime_error(std::format("Key `{}` not found", key));
         }
-        ++cnt;
-        if constexpr (__cpp_lib_format) {
-            if (w.ws_col
-                < fmt.size()
-                + init_size
-                + qMaxFilenameSize
-                + qMaxSolvernameSize) {
-                std::cout << cnt << " : " << rp_str << std::endl;
-                continue;
+        if (pair.second.IsScalar()) {
+            ParseScalar(found_key->second, pair.second.as<std::string_view>());
+        } else if (pair.second.IsSequence()) {
+            if (pair.second[0].IsScalar()) {
+                ParseVector(found_key->second, pair.second);
+            } else if (pair.second[0].IsMap()) {
+                ParseCompoundVector(found_key->second, pair.second);
+            } else {
+                throw std::runtime_error("Unknown parsing type");
             }
-            std::string solver_name_read = GetScenSolverName(dir_entry.path());
-            std::string time_str{
-                ConvertFSTimeToString(dir_entry.last_write_time())};
-            std::cout
-                << std::vformat(fmt, std::make_format_args(cnt, rp_str,
-                                                           solver_name_read,
-                                                           time_str))
-                << std::endl;
+        } else if (pair.second.IsMap()) {
+            ParseCompound(found_key->second, pair.second);
         } else {
-            std::cout << cnt << " : " << rp_str << std::endl;
+            // Ignore
         }
     }
-    return cnt;
+}
+
+void Io::ParseScalar(
+    const parser_t&  parser,
+    std::string_view source) const {
+    // 0 is fictional
+    std::invoke(parser, source, qNotAnArray);
+}
+
+void Io::ParseCompound(
+    const parser_t&   parser,
+    const YAML::Node& source) const {
+    // 0 is fictional
+    assert(source.isMap());
+    std::invoke(parser, YAML::Dump(source), qNotAnArray);
+}
+
+void Io::ParseVector(
+    const parser_t&   parser,
+    const YAML::Node& source_array) const {
+    assert(source_array.isSequence());
+    assert(source_array[0].isScalar());
+    std::size_t i{0};
+    for (const auto& value : source_array) {
+        std::invoke(parser, value.as<std::string_view>(), i++);
+    }
+}
+
+void Io::ParseCompoundVector(
+    const parser_t&   parser,
+    const YAML::Node& source_array) const {
+    assert(source_array.isSequence());
+    assert(source_array[0].isMap());
+    std::size_t i{0};
+    for (const auto& pair : source_array) {
+        std::invoke(parser, YAML::Dump(pair), i++);
+    }
+}
+
+bool Io::is_file_readable(const std::filesystem::path& path) const {
+    namespace fs = std::filesystem;
+    using enum fs::perms;
+    if (!fs::exists(path)) {
+        return false;
+    }
+    auto file_perms = fs::status(path).permissions();
+    std::cout << path.native() << std::endl;
+    return fs::is_regular_file(path) && ((file_perms & owner_read) != none);
+}
+
+bool Io::is_dir_writeable(const std::filesystem::path& path) const {
+    namespace fs = std::filesystem;
+    using enum fs::perms;
+    std::error_code ignored_ec;
+    if (!fs::exists(path) && !fs::create_directory(path, ignored_ec)) {
+        return false;
+    }
+    auto file_perms = fs::status(path).permissions();
+    return fs::is_directory(path) && ((file_perms & owner_write) != none);
+}
+
+const std::filesystem::path& Io::get_write_dir() const {
+    return write_dir_;
 }

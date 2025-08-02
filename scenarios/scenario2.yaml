@@ -1,0 +1,5 @@
+#Sample
+
+dasha_georgeus: true
+solver file   : Lagrange1D
+threads       : 1

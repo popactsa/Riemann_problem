@@ -5,7 +5,7 @@
 
 class Solver_Lagrange1d: public Solver<Solver_Lagrange1d> {
 public:
-    Solver_Lagrange1d(Io& io);
+    Solver_Lagrange1d() = default;
     void run_impl();
     void load_parameters_from_file_impl(const std::filesystem::path& path);
 
@@ -18,7 +18,7 @@ private:
 
     void update_time_step() noexcept;
 
-    Io::parsing_table_t get_parsing_table();
+    Parser::parsing_table_t get_parsing_table();
     double lx;
     int    nx;
     int    nt;

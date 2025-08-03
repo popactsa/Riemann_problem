@@ -2,16 +2,14 @@
 #include "auxiliary_functions.hpp"
 #include "solver.hpp"
 
-Solver_Lagrange1d::Solver_Lagrange1d(Io& io): Solver(io) {}
-
 void Solver_Lagrange1d::load_parameters_from_file_impl(
     const std::filesystem::path& path) {
     if (std::string_view(path.c_str()).ends_with(".yaml")) {
         if (path.is_relative()) {
-            io_.load_parameters_from_yaml(
+            Parser::load_parameters_from_yaml(
                 scenarios_dir / path, get_parsing_table());
         } else {
-            io_.load_parameters_from_yaml(path, get_parsing_table());
+            Parser::load_parameters_from_yaml(path, get_parsing_table());
         }
     } else {
         throw std::runtime_error("Given file extension is not supported");
@@ -29,7 +27,7 @@ auto Solver_Lagrange1d::enum_parser(ViscosityType& variable) {
         {"Latter", qLatter},
         {"Sum",    qSum   }
     };
-    return parser(tbl, variable);
+    return Parser::parser(tbl, variable);
 }
 
 auto Solver_Lagrange1d::enum_parser(WallType& variable) {
@@ -38,23 +36,24 @@ auto Solver_Lagrange1d::enum_parser(WallType& variable) {
         {"NoSlip",   qNoSlip  },
         {"FreeFlux", qFreeFlux}
     };
-    return parser(tbl, variable);
+    return Parser::parser(tbl, variable);
 }
 
-Io::parsing_table_t Solver_Lagrange1d::get_parsing_table() {
-    return Io::parsing_table_t{
-        {"lx",                        parser(lx)                       },
-        {"nx",                        parser(nx)                       },
-        {"nt",                        parser(nt)                       },
-        {"nt write",                  parser(nt_write)                 },
-        {"mu0",                       parser(mu0)                      },
-        {"CFL",                       parser(CFL)                      },
-        {"viscosity type",            enum_parser(viscosity_type)      },
-        {"wall type",                 enum_parser(wall_type)           },
-        {"gamma",                     parser(gamma)                    },
-        {"u",                         parser(u)                        },
-        {"initial conditions preset", parser(initial_conditions_preset)},
-        {"is conservative",           parser(is_conservative)          }
+Parser::parsing_table_t Solver_Lagrange1d::get_parsing_table() {
+    return Parser::parsing_table_t{
+        {"lx",                        Parser::parser(lx)             },
+        {"nx",                        Parser::parser(nx)             },
+        {"nt",                        Parser::parser(nt)             },
+        {"nt write",                  Parser::parser(nt_write)       },
+        {"mu0",                       Parser::parser(mu0)            },
+        {"CFL",                       Parser::parser(CFL)            },
+        {"viscosity type",            enum_parser(viscosity_type)    },
+        {"wall type",                 enum_parser(wall_type)         },
+        {"gamma",                     Parser::parser(gamma)          },
+        {"u",                         Parser::parser(u)              },
+        {"initial conditions preset",
+         Parser::parser(initial_conditions_preset)                   },
+        {"is conservative",           Parser::parser(is_conservative)}
     };
 }
 
@@ -241,8 +240,7 @@ void Solver_Lagrange1d::solve_step() {
 }
 
 void Solver_Lagrange1d::write_data() const {
-    const std::filesystem::path& write_dir = io_.get_write_dir();
-    std::ofstream fout(write_dir / (std::to_string(step) + ".csv"));
+    std::ofstream fout(write_dir_ / (std::to_string(step) + ".csv"));
     fout << std::format("x;rho;v;P\n");
     for (int i{0}; i < nx; ++i) {
         fout << std::format(

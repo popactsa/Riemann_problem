@@ -2,14 +2,12 @@
 #include <filesystem>
 #include <iostream>
 #include "auxiliary_functions.hpp"
-#include "io.hpp"
 #include "solver_lagrange1d.hpp"
 
 int main() {
-    Io                io;
-    Solver_Lagrange1d solver(io);
+    Solver_Lagrange1d solver;
     solver.load_parameters_from_file_impl(
         dash::cmake_dir() / "scenarios" / "scenario4.yaml");
-    solver.run();
+    solver.run("results/latest");
     return 0;
 }

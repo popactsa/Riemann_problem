@@ -6,7 +6,7 @@
 #include <functional>
 #include <stdexcept>
 #include "auxiliary_functions.hpp"
-#include "io.hpp"
+#include "parser.hpp"
 
 inline const std::filesystem::path test_samples_dir =
     dash::cmake_dir() / "tests" / "samples";
@@ -34,7 +34,7 @@ enum class FooEnum : int {
 };
 
 template<>
-inline void unbound_parser<FooEnum>(
+inline void Parser::unbound_parser<FooEnum>(
     FooEnum&         variable,
     std::string_view source,
     std::size_t) {
@@ -65,14 +65,14 @@ struct ConfigSample_SimpleTypes: public ConfigSample {
         return status;
     }
 
-    Io::parsing_table_t get_parsing_table() {
-        return Io::parsing_table_t{
-            {"foo_int",    parser(foo_int)   },
-            {"foo_double", parser(foo_double)},
-            {"foo_char",   parser(foo_char)  },
-            {"foo_bool",   parser(foo_bool)  },
-            {"foo_enum",   parser(foo_enum)  },
-            {"foo_string", parser(foo_string)},
+    Parser::parsing_table_t get_parsing_table() {
+        return Parser::parsing_table_t{
+            {"foo_int",    Parser::parser(foo_int)   },
+            {"foo_double", Parser::parser(foo_double)},
+            {"foo_char",   Parser::parser(foo_char)  },
+            {"foo_bool",   Parser::parser(foo_bool)  },
+            {"foo_enum",   Parser::parser(foo_enum)  },
+            {"foo_string", Parser::parser(foo_string)},
         };
     }
 
@@ -95,9 +95,9 @@ struct ConfigSample_ArrayTypes: public ConfigSample {
         return status;
     }
 
-    Io::parsing_table_t get_parsing_table() {
-        return Io::parsing_table_t{
-            {"names", parser(names)},
+    Parser::parsing_table_t get_parsing_table() {
+        return Parser::parsing_table_t{
+            {"names", Parser::parser(names)},
         };
     }
 

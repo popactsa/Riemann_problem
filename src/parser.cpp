@@ -1,26 +1,13 @@
-#include "io.hpp"
+#include "parser.hpp"
 #include <cassert>
 #include <filesystem>
 #include <format>
 #include <functional>
-#include "parsers.hpp"
+#include <iostream>
 
-Io::Io(
-    std::istream&         in,
-    std::ostream&         out,
-    std::filesystem::path write_dir):
-    in_(in),
-    out_(out),
-    write_dir_(write_dir) {
-    if (!is_dir_writeable(write_dir_)) {
-        throw std::runtime_error(
-            "Write directory is not writable/can't be created");
-    }
-}
-
-void Io::load_parameters_from_yaml(
+void Parser::load_parameters_from_yaml(
     const std::filesystem::path& path,
-    const parsing_table_t&       par_tbl) const {
+    const parsing_table_t&       par_tbl) {
     if (!std::string_view(path.c_str()).ends_with(".yaml")) {
         throw std::runtime_error("Not a .yaml file");
     }
@@ -52,24 +39,24 @@ void Io::load_parameters_from_yaml(
     }
 }
 
-void Io::ParseScalar(
+void Parser::ParseScalar(
     const parser_t&  parser,
-    std::string_view source) const {
+    std::string_view source) {
     // 0 is fictional
     std::invoke(parser, source, qNotAnArray);
 }
 
-void Io::ParseCompound(
+void Parser::ParseCompound(
     const parser_t&   parser,
-    const YAML::Node& source) const {
+    const YAML::Node& source) {
     // 0 is fictional
     assert(source.isMap());
     std::invoke(parser, YAML::Dump(source), qNotAnArray);
 }
 
-void Io::ParseVector(
+void Parser::ParseVector(
     const parser_t&   parser,
-    const YAML::Node& source_array) const {
+    const YAML::Node& source_array) {
     assert(source_array.isSequence());
     assert(source_array[0].isScalar());
     std::size_t i{0};
@@ -78,9 +65,9 @@ void Io::ParseVector(
     }
 }
 
-void Io::ParseCompoundVector(
+void Parser::ParseCompoundVector(
     const parser_t&   parser,
-    const YAML::Node& source_array) const {
+    const YAML::Node& source_array) {
     assert(source_array.isSequence());
     assert(source_array[0].isMap());
     std::size_t i{0};
@@ -89,7 +76,7 @@ void Io::ParseCompoundVector(
     }
 }
 
-bool Io::is_file_readable(const std::filesystem::path& path) const {
+bool Parser::is_file_readable(const std::filesystem::path& path) {
     namespace fs = std::filesystem;
     using enum fs::perms;
     if (!fs::exists(path)) {
@@ -100,7 +87,7 @@ bool Io::is_file_readable(const std::filesystem::path& path) const {
     return fs::is_regular_file(path) && ((file_perms & owner_read) != none);
 }
 
-bool Io::is_dir_writeable(const std::filesystem::path& path) const {
+bool Parser::is_dir_writeable(const std::filesystem::path& path) {
     namespace fs = std::filesystem;
     using enum fs::perms;
     std::error_code ignored_ec;
@@ -111,6 +98,35 @@ bool Io::is_dir_writeable(const std::filesystem::path& path) const {
     return fs::is_directory(path) && ((file_perms & owner_write) != none);
 }
 
-const std::filesystem::path& Io::get_write_dir() const {
-    return write_dir_;
+template<>
+void Parser::unbound_parser<std::string>(
+    std::string&     variable,
+    std::string_view source,
+    std::size_t) {
+    variable.clear();
+    variable.reserve(source.size());
+    std::ranges::copy(source, std::back_inserter(variable));
+}
+
+template<>
+void Parser::unbound_parser<char>(
+    char&            variable,
+    std::string_view source,
+    std::size_t) {
+    assert(source.size() == 1);
+    variable = source.front();
+}
+
+template<>
+void Parser::unbound_parser<bool>(
+    bool&            variable,
+    std::string_view source,
+    std::size_t) {
+    if (!source.compare("true") || !source.compare("1")) {
+        variable = true;
+    } else if (!source.compare("false") || !source.compare("0")) {
+        variable = false;
+    } else {
+        throw std::runtime_error("Incorrect bool value");
+    }
 }
